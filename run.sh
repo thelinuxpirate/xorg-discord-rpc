@@ -1,2 +1,5 @@
-export LD_LIBRARY_PATH=/discord-social-sdk/lib/release/libdiscord_partner_sdk.so:$LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=/discord-social-sdk/lib/release/libdiscord_partner_sdk.dylib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/discord-sdk/lib:$LD_LIBRARY_PATH
+
+# Make sure you create the build directory & setup CMake on your own
+cd build/
+cmake --build .

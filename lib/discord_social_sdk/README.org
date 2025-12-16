@@ -1,4 +1,0 @@
-#+title: Discord Developer Social SDK
-
-Built using the C++ standalone Social SDK...
-- Version: ~1.7.13152~

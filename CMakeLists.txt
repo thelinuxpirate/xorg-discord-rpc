@@ -1,49 +1,46 @@
+# CHATGPT GENERATED
+# Im not confortable enough to make a CMake file of my own
 cmake_minimum_required(VERSION 3.10)
-project(UnixXorgRPC)
+project(dwm_discord_presence)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(UnixXorgRPC src/main.cpp)
+set(SOURCES
+    src/main.cpp
 
-# Define some handy Social SDK variables
-set(DISCORD_SDK_ROOT "${CMAKE_SOURCE_DIR}/lib/discord_social_sdk")
-set(DISCORD_SDK_LIB_DIR "${DISCORD_SDK_ROOT}/lib/release")
-set(DISCORD_SDK_BIN_DIR "${DISCORD_SDK_ROOT}/bin/release")
-set(DISCORD_SDK_INCLUDE_DIR "${DISCORD_SDK_ROOT}/include")
+    discord-sdk/src/achievement_manager.cpp
+    discord-sdk/src/activity_manager.cpp
+    discord-sdk/src/application_manager.cpp
+    discord-sdk/src/core.cpp
+    discord-sdk/src/image_manager.cpp
+    discord-sdk/src/lobby_manager.cpp
+    discord-sdk/src/network_manager.cpp
+    discord-sdk/src/overlay_manager.cpp
+    discord-sdk/src/storage_manager.cpp
+    discord-sdk/src/store_manager.cpp
+    discord-sdk/src/types.cpp
+    discord-sdk/src/relationship_manager.cpp
+    discord-sdk/src/user_manager.cpp
+    discord-sdk/src/voice_manager.cpp
+)
 
-# Include for Social SDK headers
-target_include_directories(UnixXorgRPC PRIVATE ${DISCORD_SDK_INCLUDE_DIR})
+add_executable(dwm_discord_presence ${SOURCES})
 
-# Platform-specific Social SDK library paths
-if(WIN32)
-    set(DISCORD_LIB_PATH "${DISCORD_SDK_LIB_DIR}/discord_partner_sdk.lib")
-    set(DISCORD_SHARED_LIB "${DISCORD_SDK_BIN_DIR}/discord_partner_sdk.dll")
-elseif(APPLE)
-    set(DISCORD_LIB_PATH "${DISCORD_SDK_LIB_DIR}/libdiscord_partner_sdk.dylib")
-    set(DISCORD_SHARED_LIB "${DISCORD_SDK_LIB_DIR}/libdiscord_partner_sdk.dylib")
-else() # Linux
-    set(DISCORD_LIB_PATH "${DISCORD_SDK_LIB_DIR}/libdiscord_partner_sdk.so")
-    set(DISCORD_SHARED_LIB "${DISCORD_SDK_LIB_DIR}/libdiscord_partner_sdk.so")
-endif()
+target_include_directories(dwm_discord_presence PRIVATE
+    ${CMAKE_SOURCE_DIR}/discord-sdk/include
+)
 
-# Link the Social SDK library
-target_link_libraries(UnixXorgRPC PRIVATE ${DISCORD_LIB_PATH})
+set_target_properties(dwm_discord_presence PROPERTIES
+    BUILD_RPATH "${CMAKE_SOURCE_DIR}/discord-sdk/lib"
+)
 
-# Set the runtime search path (RPATH) for Linux and macOS
-if(UNIX)
-    # Use RPATH when building
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    # Set the RPATH to use the lib directory relative to the executable
-    set(CMAKE_INSTALL_RPATH "$ORIGIN")
-    if(APPLE)
-        set(CMAKE_INSTALL_RPATH "@executable_path")
-    endif()
-endif()
+target_link_directories(dwm_discord_presence PRIVATE
+    ${CMAKE_SOURCE_DIR}/discord-sdk/lib
+)
 
-# Copy Social SDK shared library to output directory, so it's available at runtime.
-add_custom_command(TARGET UnixXorgRPC POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${DISCORD_SHARED_LIB}"
-    $<TARGET_FILE_DIR:UnixXorgRPC>;
+target_link_libraries(dwm_discord_presence
+    dl
+    pthread
+    discord_game_sdk
 )
