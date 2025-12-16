@@ -11,36 +11,6 @@
 
 #include "discord.h"
 
-#if defined(_WIN32)
-#pragma pack(push, 1)
-struct BitmapImageHeader {
-    uint32_t const structSize{sizeof(BitmapImageHeader)};
-    int32_t width{0};
-    int32_t height{0};
-    uint16_t const planes{1};
-    uint16_t const bpp{32};
-    uint32_t const pad0{0};
-    uint32_t const pad1{0};
-    uint32_t const hres{2835};
-    uint32_t const vres{2835};
-    uint32_t const pad4{0};
-    uint32_t const pad5{0};
-
-    BitmapImageHeader& operator=(BitmapImageHeader const&) = delete;
-};
-
-struct BitmapFileHeader {
-    uint8_t const magic0{'B'};
-    uint8_t const magic1{'M'};
-    uint32_t size{0};
-    uint32_t const pad{0};
-    uint32_t const offset{sizeof(BitmapFileHeader) + sizeof(BitmapImageHeader)};
-
-    BitmapFileHeader& operator=(BitmapFileHeader const&) = delete;
-};
-#pragma pack(pop)
-#endif
-
 struct DiscordState {
     discord::User currentUser;
 
@@ -48,15 +18,14 @@ struct DiscordState {
 };
 
 namespace {
-volatile bool interrupted{false};
+    volatile bool interrupted{false};
 }
 
-int main(int, char**)
-{
+int main(int, char**) {
     DiscordState state{};
 
     discord::Core* core{};
-    auto result = discord::Core::Create(310270644849737729, DiscordCreateFlags_Default, &core);
+    auto result = discord::Core::Create(310270644849737729, DiscordCreateFlags_Default, &core); // opens application??
     state.core.reset(core);
     if (!state.core) {
         std::cout << "Failed to instantiate discord core! (err " << static_cast<int>(result)
@@ -102,32 +71,6 @@ int main(int, char**)
                   data.reserve(dims.GetWidth() * dims.GetHeight() * 4);
                   uint8_t* d = data.data();
                   state.core->ImageManager().GetData(handle, d, static_cast<uint32_t>(data.size()));
-
-#if defined(_WIN32)
-                  auto fileSize =
-                    data.size() + sizeof(BitmapImageHeader) + sizeof(BitmapFileHeader);
-
-                  BitmapImageHeader imageHeader;
-                  imageHeader.width = static_cast<int32_t>(dims.GetWidth());
-                  imageHeader.height = static_cast<int32_t>(dims.GetHeight());
-
-                  BitmapFileHeader fileHeader;
-                  fileHeader.size = static_cast<uint32_t>(fileSize);
-
-                  FILE* fp = fopen("avatar.bmp", "wb");
-                  fwrite(&fileHeader, sizeof(BitmapFileHeader), 1, fp);
-                  fwrite(&imageHeader, sizeof(BitmapImageHeader), 1, fp);
-
-                  for (auto y = 0u; y < dims.GetHeight(); ++y) {
-                      auto pixels = reinterpret_cast<uint32_t const*>(data.data());
-                      auto invY = dims.GetHeight() - y - 1;
-                      fwrite(
-                        &pixels[invY * dims.GetWidth()], sizeof(uint32_t) * dims.GetWidth(), 1, fp);
-                  }
-
-                  fflush(fp);
-                  fclose(fp);
-#endif
               }
               else {
                   std::cout << "Failed fetching avatar. (err " << static_cast<int>(res) << ")\n";
@@ -135,8 +78,8 @@ int main(int, char**)
           });
     });
 
-    state.core->ActivityManager().RegisterCommand("run/command/foo/bar/baz/here.exe");
-    state.core->ActivityManager().RegisterSteam(123123321);
+    state.core->ActivityManager().RegisterCommand("run/command/foo/bar/baz/here.exe"); // ?
+    state.core->ActivityManager().RegisterSteam(123123321); // Steam Game???
 
     state.core->ActivityManager().OnActivityJoin.Connect(
       [](const char* secret) { std::cout << "Join " << secret << "\n"; });
@@ -195,8 +138,8 @@ int main(int, char**)
       });
 
     discord::Activity activity{};
-    activity.SetDetails("Fruit Tarts");
-    activity.SetState("Pop Snacks");
+    activity.SetDetails("Fruit Tarts"); // smaller desc
+    activity.SetState("Pop Snacks"); // app state
     activity.GetAssets().SetSmallImage("the");
     activity.GetAssets().SetSmallText("i mage");
     activity.GetAssets().SetLargeImage("the");
