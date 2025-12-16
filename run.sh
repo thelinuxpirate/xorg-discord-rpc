@@ -2,4 +2,8 @@ export LD_LIBRARY_PATH=/discord-sdk/lib:$LD_LIBRARY_PATH
 
 # Make sure you create the build directory & setup CMake on your own
 cd build/
-cmake --build .
+cmake ..
+make
+cd -
+
+./build/dwm_discord_presence

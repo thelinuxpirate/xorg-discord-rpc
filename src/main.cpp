@@ -19,6 +19,13 @@ namespace {
     volatile bool interrupted{false};
 }
 
+/*
+ * TODO:
+ * Make a README that explains:
+ * install `wmctrl`
+ * Application runs on assets
+*/
+
 int main(int, char**) {
     DiscordState state{};
 
@@ -76,21 +83,16 @@ int main(int, char**) {
           });
     });
 
-    // unusable as we are tracking Xorg data
-    //state.core->ActivityManager().RegisterCommand("START_APP_COMMAND"); // ?
-
     discord::Activity activity{};
-
-    activity.SetName("NAME_NAME_NAME");
-
     activity.GetAssets().SetLargeImage("dwm"); // Update manually to your Window Manager
-
-    activity.GetAssets().SetSmallImage("archlinux"); // async update to current application
-
-    activity.SetDetails("APPLICATION_WINDOW"); // smaller desc
-    activity.SetState("APP_STATE"); // for some reason has a player icon next to it (app state)
-    activity.GetAssets().SetSmallText("APP_TITLE");
     activity.GetAssets().SetLargeText("WINDOW_MANAGER_TITLE");
+
+    // TODO: make update when WINDOW = new app
+    //activity.GetAssets().SetSmallImage("");
+
+    activity.SetDetails("WINDOW"); // smaller desc
+    activity.GetAssets().SetSmallText("APP_TITLE");
+
     activity.SetType(discord::ActivityType::Playing);
     state.core->ActivityManager().UpdateActivity(activity, [](discord::Result result) {
         std::cout << ((result == discord::Result::Ok) ? "Succeeded" : "Failed")
