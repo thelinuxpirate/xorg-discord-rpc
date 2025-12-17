@@ -1,5 +1,3 @@
-// all Xorg-related functions go here
-
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <string>

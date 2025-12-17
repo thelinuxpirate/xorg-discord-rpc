@@ -1,5 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 
+#include <atomic>
 #include <cassert>
 #include <csignal>
 #include <cstdlib>
@@ -8,6 +9,7 @@
 #include <vector>
 
 #include "discord.h"
+#include "rpcHelpers.h"
 #include "xTools.h"
 
 struct DiscordState {
@@ -16,8 +18,13 @@ struct DiscordState {
     std::unique_ptr<discord::Core> core;
 };
 
-namespace {
-    volatile bool interrupted{false};
+std::atomic<bool> interrupted{false};
+std::atomic<bool>* pInterrupted;
+std::atomic<bool>* pRunning;
+
+void handleSignal(int) {
+    pInterrupted->store(true);
+    pRunning->store(false);
 }
 
 /*
@@ -29,6 +36,12 @@ namespace {
 
 int main(int, char**) {
     DiscordState state{};
+    std::atomic<bool> running{true};
+
+    pInterrupted = &interrupted;
+    pRunning = &running;
+
+    std::signal(SIGINT, handleSignal);
 
     discord::Core* core{};
     auto result = discord::Core::Create(1258511249499750400, DiscordCreateFlags_Default, &core);
@@ -51,7 +64,7 @@ int main(int, char**) {
                   << state.currentUser.GetDiscriminator() << "\n";
 
         state.core->UserManager().GetUser(1258511249499750400, // dont know what this ID is for | 130050050968518656
-                                          [](discord::Result result, discord::User const& user) {
+                                          [](discord::Result result, discord::User const &user) {
                                               if (result == discord::Result::Ok) {
                                                   std::cout << "Get " << user.GetUsername() << "\n";
                                               }
@@ -86,24 +99,37 @@ int main(int, char**) {
 
     // Rich Presence Options:
     discord::Activity activity{};
+    activity.SetType(discord::ActivityType::Playing);
 
-    activity.GetAssets().SetLargeImage(getWindowManagerName().c_str()); // gets name of your Window Manager
+    // gets name of your Window Manager
+    activity.GetAssets().SetLargeImage(getWindowManagerName().c_str());
     activity.GetAssets().SetLargeText(getWindowManagerName().c_str());
 
-    // TODO: make update when WINDOW = new app
-    activity.GetAssets().SetSmallImage("archlinux"); // image
+    // keeps it from start time getting messed up
+    activity.GetTimestamps().SetStart(std::time(nullptr));
 
-    activity.SetDetails(getWindowTitle().c_str()); // smaller desc
+    // runs whenever the window changes
+    std::thread monitorThread([&state, &running, &activity]() {
+        monitorWindowChanges(running, [&](const std::string &title, const std::string &name) {
+            activity.GetAssets().SetSmallImage(to_lower(title).c_str()); // MUST match asset title of your application
+            activity.SetDetails(title.c_str()); // smaller desc
+            activity.GetAssets().SetSmallText(name.c_str());
 
-    activity.GetAssets().SetSmallText(getWindowName().c_str());
-
-    activity.SetType(discord::ActivityType::Playing);
-    state.core->ActivityManager().UpdateActivity(activity, [](discord::Result result) {
-        std::cout << ((result == discord::Result::Ok) ? "Succeeded" : "Failed")
-                  << " updating activity!\n";
+            // update Discord Rich Presence
+            state.core->ActivityManager().UpdateActivity(activity, [](discord::Result result) {
+                std::cout << ((result == discord::Result::Ok) ? "Updated!\n" : "Failed!\n");
+            });
+        });
     });
 
-    std::signal(SIGINT, [](int) { interrupted = true; });
+    while (!interrupted) {
+        state.core->RunCallbacks();
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+    }
+
+    if (monitorThread.joinable()) {
+        monitorThread.join();
+    }
 
     do {
         state.core->RunCallbacks();
