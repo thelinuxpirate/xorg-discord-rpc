@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "discord.h"
+#include "xTools.h"
 
 struct DiscordState {
     discord::User currentUser;
@@ -84,11 +85,12 @@ int main(int, char**) {
     });
 
     discord::Activity activity{};
-    activity.GetAssets().SetLargeImage("dwm"); // Update manually to your Window Manager
-    activity.GetAssets().SetLargeText("WINDOW_MANAGER_TITLE");
+
+    activity.GetAssets().SetLargeImage(getWindowManagerName().c_str());
+    activity.GetAssets().SetLargeText(getWindowManagerName().c_str());
 
     // TODO: make update when WINDOW = new app
-    //activity.GetAssets().SetSmallImage("");
+    //activity.GetAssets().SetSmallImage("archlinux");
 
     activity.SetDetails("WINDOW"); // smaller desc
     activity.GetAssets().SetSmallText("APP_TITLE");

@@ -1,6 +1,9 @@
 #ifndef XTOOLS_H
 #define XTOOLS_H
 
-// function declerations
+#include <X11/Xlib.h>
+#include <string>
+
+std::string getWindowManagerName();
 
 #endif 
