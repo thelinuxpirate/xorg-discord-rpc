@@ -1,141 +1,102 @@
 #define _CRT_SECURE_NO_WARNINGS
-
 #include <atomic>
-#include <cassert>
 #include <csignal>
-#include <cstdlib>
+#include <chrono>
 #include <iostream>
+#include <string>
+#include <algorithm>
 #include <thread>
-#include <vector>
 
 #include "discord.h"
-#include "rpcHelpers.h"
 #include "xTools.h"
-
-struct DiscordState {
-    discord::User currentUser;
-
-    std::unique_ptr<discord::Core> core;
-};
-
-std::atomic<bool> interrupted{false};
-std::atomic<bool>* pInterrupted;
-std::atomic<bool>* pRunning;
-
-void handleSignal(int) {
-    pInterrupted->store(true);
-    pRunning->store(false);
-}
 
 /*
  * TODO:
+ * turn into cli command + add function to disable RPC / restart
+ * trim spaces function?
  * Make a README that explains:
  * Build Setup
  * Application runs on assets
 */
 
-int main(int, char**) {
-    DiscordState state{};
-    std::atomic<bool> running{true};
+const long APP_ID = 1258511249499750400;
 
-    pInterrupted = &interrupted;
-    pRunning = &running;
+std::atomic<bool> interrupted{false};
 
+void handleSignal(int) { interrupted = true; }
+
+std::string to_lower(const std::string &str) {
+    std::string result = str;
+    std::transform(result.begin(), result.end(), result.begin(),
+                   [](unsigned char c){ return std::tolower(c); });
+    return result;
+}
+
+int main() {
     std::signal(SIGINT, handleSignal);
 
     discord::Core* core{};
-    auto result = discord::Core::Create(1258511249499750400, DiscordCreateFlags_Default, &core);
-    state.core.reset(core);
-    if (!state.core) {
-        std::cout << "Failed to instantiate discord core! (err " << static_cast<int>(result)
-                  << ")\n";
-        std::exit(-1);
+    auto result = discord::Core::Create(APP_ID, DiscordCreateFlags_Default, &core);
+    if (!core) {
+        std::cerr << "Failed to instantiate discord core!\n";
+        return -1;
     }
+    std::unique_ptr<discord::Core> stateCore(core);
 
-    state.core->SetLogHook(
-      discord::LogLevel::Debug, [](discord::LogLevel level, const char* message) {
-          std::cerr << "Log(" << static_cast<uint32_t>(level) << "): " << message << "\n";
-      });
-
-    core->UserManager().OnCurrentUserUpdate.Connect([&state]() {
-        state.core->UserManager().GetCurrentUser(&state.currentUser);
-
-        std::cout << "Current user updated: " << state.currentUser.GetUsername() << "#"
-                  << state.currentUser.GetDiscriminator() << "\n";
-
-        state.core->UserManager().GetUser(1258511249499750400, // dont know what this ID is for | 130050050968518656
-                                          [](discord::Result result, discord::User const &user) {
-                                              if (result == discord::Result::Ok) {
-                                                  std::cout << "Get " << user.GetUsername() << "\n";
-                                              }
-                                              else {
-                                                  std::cout << "Failed to get David!\n";
-                                              }
-                                          });
-
-        discord::ImageHandle handle{};
-        handle.SetId(state.currentUser.GetId());
-        handle.SetType(discord::ImageType::User);
-        handle.SetSize(256);
-
-        state.core->ImageManager().Fetch(
-          handle, true, [&state](discord::Result res, discord::ImageHandle handle) {
-              if (res == discord::Result::Ok) {
-                  discord::ImageDimensions dims{};
-                  state.core->ImageManager().GetDimensions(handle, &dims);
-                  std::cout << "Fetched " << dims.GetWidth() << "x" << dims.GetHeight()
-                            << " avatar!\n";
-
-                  std::vector<uint8_t> data;
-                  data.reserve(dims.GetWidth() * dims.GetHeight() * 4);
-                  uint8_t* d = data.data();
-                  state.core->ImageManager().GetData(handle, d, static_cast<uint32_t>(data.size()));
-              }
-              else {
-                  std::cout << "Failed fetching avatar. (err " << static_cast<int>(res) << ")\n";
-              }
-          });
-    });
-
-    // Rich Presence Options:
+    // setup activity once
     discord::Activity activity{};
     activity.SetType(discord::ActivityType::Playing);
-
-    // gets name of your Window Manager
     activity.GetAssets().SetLargeImage(getWindowManagerName().c_str());
     activity.GetAssets().SetLargeText(getWindowManagerName().c_str());
-
-    // keeps it from start time getting messed up
     activity.GetTimestamps().SetStart(std::time(nullptr));
 
-    // runs whenever the window changes
-    std::thread monitorThread([&state, &running, &activity]() {
-        monitorWindowChanges(running, [&](const std::string &title, const std::string &name) {
-            activity.GetAssets().SetSmallImage(to_lower(title).c_str()); // MUST match asset title of your application
-            activity.SetDetails(title.c_str()); // smaller desc
-            activity.GetAssets().SetSmallText(name.c_str());
+    std::string lastTitle;
+    std::string lastName;
 
-            // update Discord Rich Presence
-            state.core->ActivityManager().UpdateActivity(activity, [](discord::Result result) {
-                std::cout << ((result == discord::Result::Ok) ? "Updated!\n" : "Failed!\n");
-            });
-        });
-    });
+    auto lastCheck = std::chrono::steady_clock::now();
 
+    // runs Discord callbacks every 16ms, checks window every 500ms
     while (!interrupted) {
-        state.core->RunCallbacks();
+        stateCore->RunCallbacks();
+
+        auto now = std::chrono::steady_clock::now();
+        if (now - lastCheck >= std::chrono::milliseconds(500)) {
+            lastCheck = now;
+
+            std::string title = getWindowTitle();
+            std::string name  = getWindowName();
+
+            if (title != lastTitle || name != lastName) {
+                lastTitle = title;
+                lastName  = name;
+
+                if (title == "unknown" || name == "unknown") {
+                    title = "empty workspace";
+                    name = "empty workspace";
+                }
+
+                activity.GetAssets().SetSmallImage(to_lower(title).c_str());
+                activity.SetDetails(title.c_str());
+                activity.GetAssets().SetSmallText(name.c_str());
+
+                /*std::cout << std::endl
+                          << "Current Window = "
+                          << to_lower(title).c_str()
+                          << std::endl;
+
+                std::cout <<  "Current WinName = "
+                          << to_lower(name).c_str()
+                          << std::endl
+                          << std::endl;*/
+
+                stateCore->ActivityManager().UpdateActivity(activity, [](discord::Result result) {
+                    std::cout << ((result == discord::Result::Ok) ? "Updated Status!\n" : "Status Failed!\n");
+                });
+            }
+        }
+
         std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
-
-    if (monitorThread.joinable()) {
-        monitorThread.join();
-    }
-
-    do {
-        state.core->RunCallbacks();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
-    } while (!interrupted);
 
     return 0;
 }
