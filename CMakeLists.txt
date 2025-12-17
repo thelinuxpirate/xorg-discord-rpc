@@ -6,8 +6,12 @@ project(dwm_discord_presence)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(X11 REQUIRED)
+
 set(SOURCES
     src/main.cpp
+    src/rpcHelpers.cpp
+    src/xTools.cpp
 
     discord-sdk/src/achievement_manager.cpp
     discord-sdk/src/activity_manager.cpp
@@ -25,9 +29,12 @@ set(SOURCES
     discord-sdk/src/voice_manager.cpp
 )
 
+include_directories(${X11_INCLUDE_DIR})
+
 add_executable(dwm_discord_presence ${SOURCES})
 
 target_include_directories(dwm_discord_presence PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/discord-sdk/include
 )
 
@@ -43,4 +50,5 @@ target_link_libraries(dwm_discord_presence
     dl
     pthread
     discord_game_sdk
+    ${X11_LIBRARIES}
 )
