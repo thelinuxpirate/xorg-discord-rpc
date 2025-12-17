@@ -1,5 +1,7 @@
 # CHATGPT GENERATED
 # Im not confortable enough to make a CMake file of my own
+# In order to build: download Discord-Game-SDK (Legacy: v2.5.6) & follow \
+# https://discord.com/developers/docs/developer-tools/game-sdk#game-sdk instructions
 cmake_minimum_required(VERSION 3.10)
 project(xorg_discord_presence)
 

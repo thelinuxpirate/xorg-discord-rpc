@@ -1,9 +1,10 @@
 #ifndef XTOOLS_H
 #define XTOOLS_H
 
-#include <X11/Xlib.h>
 #include <string>
 
 std::string getWindowManagerName();
+std::string getWindowName();
+std::string getWindowTitle();
 
 #endif 

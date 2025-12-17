@@ -23,7 +23,7 @@ namespace {
 /*
  * TODO:
  * Make a README that explains:
- * install `wmctrl`
+ * Build Setup
  * Application runs on assets
 */
 
@@ -84,16 +84,18 @@ int main(int, char**) {
           });
     });
 
+    // Rich Presence Options:
     discord::Activity activity{};
 
-    activity.GetAssets().SetLargeImage(getWindowManagerName().c_str());
+    activity.GetAssets().SetLargeImage(getWindowManagerName().c_str()); // gets name of your Window Manager
     activity.GetAssets().SetLargeText(getWindowManagerName().c_str());
 
     // TODO: make update when WINDOW = new app
-    //activity.GetAssets().SetSmallImage("archlinux");
+    activity.GetAssets().SetSmallImage("archlinux"); // image
 
-    activity.SetDetails("WINDOW"); // smaller desc
-    activity.GetAssets().SetSmallText("APP_TITLE");
+    activity.SetDetails(getWindowTitle().c_str()); // smaller desc
+
+    activity.GetAssets().SetSmallText(getWindowName().c_str());
 
     activity.SetType(discord::ActivityType::Playing);
     state.core->ActivityManager().UpdateActivity(activity, [](discord::Result result) {
