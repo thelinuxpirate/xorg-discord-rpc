@@ -6,4 +6,4 @@ cmake ..
 make
 cd -
 
-./build/dwm_discord_presence
+./build/xorg_discord_presence

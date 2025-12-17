@@ -1,7 +1,7 @@
 # CHATGPT GENERATED
 # Im not confortable enough to make a CMake file of my own
 cmake_minimum_required(VERSION 3.10)
-project(dwm_discord_presence)
+project(xorg_discord_presence)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -31,22 +31,22 @@ set(SOURCES
 
 include_directories(${X11_INCLUDE_DIR})
 
-add_executable(dwm_discord_presence ${SOURCES})
+add_executable(xorg_discord_presence ${SOURCES})
 
-target_include_directories(dwm_discord_presence PRIVATE
+target_include_directories(xorg_discord_presence PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/discord-sdk/include
 )
 
-set_target_properties(dwm_discord_presence PROPERTIES
+set_target_properties(xorg_discord_presence PROPERTIES
     BUILD_RPATH "${CMAKE_SOURCE_DIR}/discord-sdk/lib"
 )
 
-target_link_directories(dwm_discord_presence PRIVATE
+target_link_directories(xorg_discord_presence PRIVATE
     ${CMAKE_SOURCE_DIR}/discord-sdk/lib
 )
 
-target_link_libraries(dwm_discord_presence
+target_link_libraries(xorg_discord_presence
     dl
     pthread
     discord_game_sdk
