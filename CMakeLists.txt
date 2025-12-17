@@ -12,7 +12,6 @@ find_package(X11 REQUIRED)
 
 set(SOURCES
     src/main.cpp
-    src/rpcHelpers.cpp
     src/xTools.cpp
 
     discord-sdk/src/achievement_manager.cpp
