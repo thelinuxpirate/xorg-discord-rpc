@@ -1,0 +1,58 @@
+#+title: Discord Game SDK (Legacy)
+
+# TODO: Explain how to patch broken SDK / make a .diff file
+
+* Build Setup
+- Download [[https://dl-game-sdk.discordapp.net/2.5.6/discord_game_sdk.zip][Discord-Game-SDK (Legacy: v2.5.6)]]
+- Extract C++ Files:
+
+#+begin_src
+discord-sdk
+├── include
+│   ├── achievement_manager.h
+│   ├── activity_manager.h
+│   ├── application_manager.h
+│   ├── core.h
+│   ├── discord.h
+│   ├── event.h
+│   ├── ffi.h
+│   ├── image_manager.h
+│   ├── lobby_manager.h
+│   ├── network_manager.h
+│   ├── overlay_manager.h
+│   ├── relationship_manager.h
+│   ├── storage_manager.h
+│   ├── store_manager.h
+│   ├── types.h
+│   ├── user_manager.h
+│   └── voice_manager.h
+├── lib
+│   └── libdiscord_game_sdk.so
+└── src
+    ├── achievement_manager.cpp
+    ├── activity_manager.cpp
+    ├── application_manager.cpp
+    ├── core.cpp
+    ├── image_manager.cpp
+    ├── lobby_manager.cpp
+    ├── network_manager.cpp
+    ├── overlay_manager.cpp
+    ├── relationship_manager.cpp
+    ├── storage_manager.cpp
+    ├── store_manager.cpp
+    ├── types.cpp
+    ├── user_manager.cpp
+    └── voice_manager.cpp
+#+end_src
+
+Now your project directory should look something like:
+#+begin_src
+├── build
+├── discord-sdk
+│   ├── include
+│   ├── lib
+│   └── src
+├── include
+└── src
+#+end_src
+Once you get to this point just run the ~run.sh~ file & youre good to go
