@@ -5,7 +5,7 @@
 #include <chrono>
 #include <iostream>
 #include <string>
-#include <algorithm>
+
 #include <thread>
 #include <fstream>
 
@@ -16,6 +16,7 @@
 
 #include "discord.h"
 #include "rpc.h"
+#include "user.h"
 #include "xTools.h"
 
 using namespace std;
@@ -56,22 +57,6 @@ pid_t daemonize() {
     close(fd);
 
     return getpid();
-}
-
-
-string to_lower(const string &str) {
-    string result = str;
-    transform(result.begin(), result.end(), result.begin(),
-                   [](unsigned char c){ return tolower(c); });
-    return result;
-}
-
-string sanitize_asset(string s) {
-    s = to_lower(s);
-    s.erase(remove_if(s.begin(), s.end(),
-        [](char c){ return !isalnum(c) && c != '_'; }),
-        s.end());
-    return s;
 }
 
 int runDiscordPresence(const long &APP_ID, bool daemon) {

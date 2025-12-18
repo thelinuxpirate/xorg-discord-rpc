@@ -3,6 +3,9 @@
 
 #include <string>
 
+std::string to_lower(const std::string &str);
+std::string sanitize_asset(std::string s);
+
 std::string getWindowManagerName();
 std::string getWindowName();
 std::string getWindowTitle();
