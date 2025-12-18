@@ -1,3 +1,4 @@
+// TODO: replace cout via syslog()
 #define _CRT_SECURE_NO_WARNINGS
 #include <atomic>
 #include <csignal>
@@ -6,15 +7,57 @@
 #include <string>
 #include <algorithm>
 #include <thread>
+#include <fstream>
+
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "discord.h"
+#include "rpc.h"
 #include "xTools.h"
 
 using namespace std;
 
 atomic<bool> interrupted{false};
 
-void handleSignal(int) { interrupted = true; }
+void handleSignal(int sig) {
+    if (sig == SIGTERM || sig == SIGINT)
+        interrupted = true;
+}
+
+void killDaemon() {
+    ifstream f(PID_FILE);
+    pid_t pid;
+    if (f >> pid) {
+        kill(pid, SIGTERM);
+    }
+}
+
+pid_t daemonize() {
+    pid_t pid = fork();
+    if (pid < 0) exit(EXIT_FAILURE);
+    if (pid > 0) exit(EXIT_SUCCESS);
+
+    if (setsid() < 0) exit(EXIT_FAILURE);
+
+    pid = fork();
+    if (pid < 0) exit(EXIT_FAILURE);
+    if (pid > 0) exit(EXIT_SUCCESS);
+
+    umask(0);
+    chdir("/");
+
+    int fd = open("/dev/null", O_RDWR);
+    dup2(fd, STDIN_FILENO);
+    dup2(fd, STDOUT_FILENO);
+    dup2(fd, STDERR_FILENO);
+    close(fd);
+
+    return getpid();
+}
+
 
 string to_lower(const string &str) {
     string result = str;
@@ -23,7 +66,28 @@ string to_lower(const string &str) {
     return result;
 }
 
-int runDiscordPresence(const long &APP_ID) {
+string sanitize_asset(string s) {
+    s = to_lower(s);
+    s.erase(remove_if(s.begin(), s.end(),
+        [](char c){ return !isalnum(c) && c != '_'; }),
+        s.end());
+    return s;
+}
+
+int runDiscordPresence(const long &APP_ID, bool daemon) {
+    // rerun 'signal' twice because they reset after pid forks sometimes
+    signal(SIGTERM, handleSignal);
+    signal(SIGINT, handleSignal);
+
+    if (daemon) {
+        pid_t daemonPid = daemonize();
+        ofstream(PID_FILE) << daemonPid;
+    } else {
+        killDaemon();
+        return 0;
+    }
+
+    signal(SIGTERM, handleSignal);
     signal(SIGINT, handleSignal);
 
     discord::Core* core{};
@@ -70,11 +134,13 @@ int runDiscordPresence(const long &APP_ID) {
                     name = "wezterm";
                 }
 
-                activity.GetAssets().SetSmallImage(to_lower(title).c_str());
+                string asset = sanitize_asset(title);
+
                 activity.SetDetails(title.c_str());
+                activity.GetAssets().SetSmallImage(asset.c_str());
                 activity.GetAssets().SetSmallText(name.c_str());
 
-                cout << endl
+                /*cout << endl
                           << "Current Window = "
                           << to_lower(title).c_str()
                           << endl;
@@ -82,7 +148,7 @@ int runDiscordPresence(const long &APP_ID) {
                 cout <<  "Current WinName = "
                           << to_lower(name).c_str()
                           << endl
-                          << endl;
+                          << endl;*/
 
                 stateCore->ActivityManager().UpdateActivity(activity, [](discord::Result result) {
                     cout << ((result == discord::Result::Ok) ? "Updated Status!\n" : "Status Failed!\n");
@@ -93,5 +159,6 @@ int runDiscordPresence(const long &APP_ID) {
         this_thread::sleep_for(chrono::milliseconds(16));
     }
 
+    unlink(PID_FILE);
     return 0;
 }
