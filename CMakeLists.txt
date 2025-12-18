@@ -3,6 +3,7 @@
 # In order to build: download Discord-Game-SDK (Legacy: v2.5.6) & follow \
 # https://discord.com/developers/docs/developer-tools/game-sdk#game-sdk instructions
 cmake_minimum_required(VERSION 3.10)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
 project(xorg_discord_presence)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -10,9 +11,28 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(X11 REQUIRED)
 
+include(FetchContent)
+FetchContent_Declare(
+    cli11_proj
+    QUIET
+    GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+    GIT_TAG v2.3.2
+)
+
+FetchContent_MakeAvailable(cli11_proj)
+
+FetchContent_Declare(
+    tomlplusplus
+    GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
+    GIT_TAG v3.4.0
+)
+FetchContent_MakeAvailable(tomlplusplus)
+
 set(SOURCES
     src/main.cpp
     src/xTools.cpp
+    src/rpc.cpp
+    src/user.cpp
 
     discord-sdk/src/achievement_manager.cpp
     discord-sdk/src/activity_manager.cpp
@@ -52,4 +72,6 @@ target_link_libraries(xorg_discord_presence
     pthread
     discord_game_sdk
     ${X11_LIBRARIES}
+    CLI11::CLI11
+    tomlplusplus::tomlplusplus
 )
