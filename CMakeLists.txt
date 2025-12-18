@@ -70,8 +70,8 @@ target_link_directories(xorg_discord_presence PRIVATE
 target_link_libraries(xorg_discord_presence
     dl
     pthread
+    CLI11::CLI11
     discord_game_sdk
     ${X11_LIBRARIES}
-    CLI11::CLI11
     tomlplusplus::tomlplusplus
 )
