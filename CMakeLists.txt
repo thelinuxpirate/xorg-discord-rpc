@@ -31,6 +31,7 @@ FetchContent_MakeAvailable(tomlplusplus)
 set(SOURCES
     src/main.cpp
     src/xTools.cpp
+    src/daemon.cpp
     src/rpc.cpp
     src/user.cpp
 

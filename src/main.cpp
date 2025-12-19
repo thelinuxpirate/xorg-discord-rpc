@@ -1,4 +1,5 @@
 #include <CLI/CLI.hpp>
+#include <string>
 #include <iostream>
 
 #include "user.h"
@@ -22,13 +23,17 @@
 
 int main(int argc, char** argv) {
     setUp();
+
     CLI::App app{"The Xorg Discord RPC CLI Tool"};
 
     long id{0};
     int kill{0};
+    std::string path;
+    // default_str(string)
 
-    app.add_option("-r,--appid", id, "Runs instance of RPC using your APPID");
-    app.add_option("-k,--kill", kill, "Shuts off running instance");
+    app.add_option("-r,--appid", id, "Runs instance of RPC <APPID>"); // TODO: add ->check(idChecker());
+    app.add_option("-l,--load", path, "Loads a specfic config <TOML_PATH>");
+    app.add_option("-k,--kill", kill, "Shuts off ongoing instance <1>")->expected(1);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -36,12 +41,16 @@ int main(int argc, char** argv) {
         std::cout << app.help() << std::endl;
     }
 
+    if (!path.empty()) {
+        // code
+    }
+
     if (id > 0) {
-        runDiscordPresence(id, true);
+        return runDiscordPresence(id, true);
     }
 
     if (kill > 0) {
-        runDiscordPresence(0, false);
+        return runDiscordPresence(0, false);
     }
 
     return 0;
