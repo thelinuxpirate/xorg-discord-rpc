@@ -59,13 +59,15 @@ ResolvedPresence resolvePresence(
     };
 }
 
-int runDiscordPresence(const long &APP_ID, bool daemon) {
+int runDiscordPresence(
+    const long &APP_ID,
+    bool daemon,
+    const PresenceConfig &cfg
+) {
     if (!daemon) {
         killDaemon();
         return 0;
     }
-
-    PresenceConfig cfg = loadConfig(getUserConfig().configFile);
 
     daemonize();
     installSignals();

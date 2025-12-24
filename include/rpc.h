@@ -16,6 +16,10 @@ ResolvedPresence resolvePresence(
     const std::string &windowClass
 );
 
-int runDiscordPresence(const long &APP_ID, bool daemon);
+int runDiscordPresence(
+    const long &APP_ID,
+    bool daemon,
+    const PresenceConfig &cfg
+);
 
 #endif

@@ -156,7 +156,6 @@ int setUp() {
         return 1;
     }
 
-    // can this be reloaded???
     loadConfig(cfg.configFile);
     return 0;
 }
