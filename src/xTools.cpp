@@ -2,24 +2,8 @@
 #include <X11/Xatom.h>
 #include <string>
 #include <cstring>
-#include <algorithm>
 
 using namespace std;
-
-string to_lower(const string &str) {
-    string result = str;
-    transform(result.begin(), result.end(), result.begin(),
-                   [](unsigned char c){ return tolower(c); });
-    return result;
-}
-
-string sanitize_asset(string s) {
-    s = to_lower(s);
-    s.erase(remove_if(s.begin(), s.end(),
-        [](char c){ return !isalnum(c) && c != '_'; }),
-        s.end());
-    return s;
-}
 
 string getWindowManagerName() {
     Display* dpy = XOpenDisplay(nullptr);
@@ -85,7 +69,7 @@ string getWindowManagerName() {
 }
 
 // returns name of Window like: Discord #general, xTools.cpp – Doom Emacs
-string getWindowName() {
+string getWindowTitle() {
     Display* dpy = XOpenDisplay(nullptr);
     if (!dpy) return "unknown";
 
@@ -167,7 +151,7 @@ string getWindowName() {
 }
 
 // title of Window like - Emacs, Alacritty
-string getWindowTitle() {
+string getWindowClass() {
     Display* dpy = XOpenDisplay(nullptr);
     if (!dpy) return "unknown";
 

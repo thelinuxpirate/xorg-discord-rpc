@@ -8,7 +8,9 @@
 
 #include "daemon.h"
 
-std::atomic<bool> interrupted{false};
+using namespace std;
+
+atomic<bool> interrupted{false};
 
 void handleSignal(int sig) {
     if (sig == SIGTERM || sig == SIGINT)
@@ -26,7 +28,7 @@ void installSignals() {
 }
 
 void killDaemon() {
-    std::ifstream f(PID_FILE);
+    ifstream f(PID_FILE);
     pid_t pid;
 
     if (!(f >> pid)) return;

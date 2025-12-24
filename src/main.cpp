@@ -7,19 +7,14 @@
 
 /*
  * TODO:
- * turn into cli command + add function to disable RPC / restart
- * trim spaces function?
- * set default to gnu
+ * add function to restart RPC
  * Make a README that explains:
  * Build Setup
  * Application runs on assets
  * why daemon works via PID file instead of systemD
- *
- * IDEA: read toml file with app name += convert string to asset name for png
- * WinTitle = 'neovim' or 'emacs' = convert WinName to = 'editor'
- *
- * if empty-workspace = asset gnu^
 */
+
+using namespace std;
 
 int main(int argc, char** argv) {
     setUp();
@@ -28,8 +23,7 @@ int main(int argc, char** argv) {
 
     long id{0};
     int kill{0};
-    std::string path;
-    // default_str(string)
+    string path;
 
     app.add_option("-r,--appid", id, "Runs instance of RPC <APPID>"); // TODO: add ->check(idChecker());
     app.add_option("-l,--load", path, "Loads a specfic config <TOML_PATH>");
@@ -38,11 +32,11 @@ int main(int argc, char** argv) {
     CLI11_PARSE(app, argc, argv);
 
     if (argc == 1) {
-        std::cout << app.help() << std::endl;
+        cout << app.help() << endl;
     }
 
-    if (!path.empty()) {
-        // code
+    if (!path.empty()) { // TODO: double-check
+        loadConfig(path);
     }
 
     if (id > 0) {

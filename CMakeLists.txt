@@ -34,6 +34,7 @@ set(SOURCES
     src/daemon.cpp
     src/rpc.cpp
     src/user.cpp
+    src/misc.cpp
 
     discord-sdk/src/achievement_manager.cpp
     discord-sdk/src/activity_manager.cpp

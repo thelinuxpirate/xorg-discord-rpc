@@ -9,15 +9,31 @@ struct UserConfig {
     std::string configFile;
 };
 
+enum class DetailsSource {
+    Title,
+    Class,
+    App
+};
+
+struct PresenceSettings {
+    DetailsSource details = DetailsSource::Title;
+};
+
+struct ImagePair {
+    std::string large;
+    std::string small;
+};
+
 struct AppAssets {
-    std::string title;
+    std::string name;
     std::string large;
     std::string small;
 };
 
 struct PresenceConfig {
-    AppAssets defaults;
+    ImagePair defaults;
     AppAssets empty;
+    PresenceSettings settings;
     std::unordered_map<std::string, std::string> aliases;
     std::unordered_map<std::string, AppAssets> apps;
 };

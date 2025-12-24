@@ -1,6 +1,4 @@
-// TODO: replace cout via syslog()
 #define _CRT_SECURE_NO_WARNINGS
-#include <atomic>
 #include <chrono>
 #include <iostream>
 #include <string>
@@ -9,28 +7,71 @@
 #include <unistd.h>
 
 #include "discord.h"
+#include "rpc.h"
 #include "daemon.h"
 #include "user.h"
+#include "misc.h"
 #include "xTools.h"
 
 using namespace std;
 
+ResolvedPresence resolvePresence(
+    const PresenceConfig &cfg,
+    const string &windowClass,
+    const string &windowTitle
+) {
+    string normClass = normalize(windowClass);
+    auto itAlias = cfg.aliases.find(normClass);
+    string appKey = (itAlias != cfg.aliases.end()) ? itAlias->second : normClass;
+    string detailsFallback;
+
+    if (windowTitle == "unknown") {
+        return {
+            cfg.empty.name.empty() ? windowTitle : cfg.empty.name,
+            cfg.empty.large.empty() ? cfg.defaults.large : cfg.empty.large,
+            cfg.empty.small.empty() ? cfg.defaults.small : cfg.empty.small
+        };
+    }
+
+    if (auto it = cfg.apps.find(appKey); it != cfg.apps.end()) {
+        const auto &r = it->second;
+
+        // FALLBACK: use window class if name field is null from table
+        string detailsName = r.name.empty() ? windowClass : r.name;
+
+        return {
+            detailsName,
+            r.large.empty() ? cfg.defaults.large : r.large,
+            r.small.empty() ? cfg.defaults.small : r.small
+        };
+    }
+
+    switch (cfg.settings.details) {
+        case DetailsSource::Title: detailsFallback = windowTitle; break;
+        case DetailsSource::App: detailsFallback = windowClass; break; // class is the default fallback option
+        case DetailsSource::Class: detailsFallback = windowClass; break;
+    }
+
+    return {
+        detailsFallback,
+        cfg.defaults.large,
+        cfg.defaults.small
+    };
+}
+
 int runDiscordPresence(const long &APP_ID, bool daemon) {
-    // rerun 'signal' twice because they reset after pid forks sometimes
     if (!daemon) {
         killDaemon();
         return 0;
     }
 
+    PresenceConfig cfg = loadConfig(getUserConfig().configFile);
+
     daemonize();
     installSignals();
 
-   // signal(SIGTERM, handleSignal);
-   // signal(SIGINT, handleSignal);
-
     discord::Core* core{};
-    auto result = discord::Core::Create(APP_ID, DiscordCreateFlags_Default, &core);
-    if (!core) {
+    if (discord::Core::Create(APP_ID, DiscordCreateFlags_Default, &core) != discord::Result::Ok || !core) {
         cerr << "Failed to instantiate discord core!\n";
         return -1;
     }
@@ -38,64 +79,70 @@ int runDiscordPresence(const long &APP_ID, bool daemon) {
 
     ofstream(PID_FILE) << getpid();
 
-   // signal(SIGTERM, handleSignal);
-   // signal(SIGINT, handleSignal);
-
-    // setup activity once
     discord::Activity activity{};
     activity.SetType(discord::ActivityType::Playing);
     activity.GetAssets().SetLargeImage(getWindowManagerName().c_str());
     activity.GetAssets().SetLargeText(getWindowManagerName().c_str());
     activity.GetTimestamps().SetStart(time(nullptr));
 
-    string lastTitle;
-    string lastName;
+    string lastClass, lastTitle;
 
     auto lastCheck = chrono::steady_clock::now();
 
-    // runs Discord callbacks every 16ms, checks window every 500ms
-    while (!interrupted.load(std::memory_order_relaxed)) {
+    while (!interrupted.load(memory_order_relaxed)) {
         stateCore->RunCallbacks();
 
         auto now = chrono::steady_clock::now();
         if (now - lastCheck >= chrono::milliseconds(500)) {
             lastCheck = now;
 
-            string title = getWindowTitle();
-            string name  = getWindowName();
+            string winClass = getWindowClass();
+            string title    = getWindowTitle();
 
-            if (title != lastTitle || name != lastName) {
+            if (winClass != lastClass || title != lastTitle) {
+                lastClass = winClass;
                 lastTitle = title;
-                lastName  = name;
 
-                // TODO: remove
-                if (title == "unknown" || name == "unknown") {
-                    title = "empty workspace";
-                    name = "empty workspace";
-                } else if (title == "org.wezfurlong.wezterm") {
-                    title = "wezterm";
-                    name = "wezterm";
-                }
+         auto resolved = resolvePresence(cfg, winClass, title);
 
-                string asset = sanitize_asset(title);
+         string details;
+         switch (cfg.settings.details) {
+             case DetailsSource::App:
+                 details = resolved.name;
+                 break;
+             case DetailsSource::Title:
+                 details = title;
+                 break;
+             case DetailsSource::Class:
+             default:
+                 details = winClass;
+                 break;
+         }
 
-                activity.SetDetails(title.c_str());
-                activity.GetAssets().SetSmallImage(asset.c_str());
-                activity.GetAssets().SetSmallText(name.c_str());
+         activity.SetDetails(capitalizeFirstLetter(details).c_str());
 
-                /*cout << endl
-                          << "Current Window = "
-                          << to_lower(title).c_str()
-                          << endl;
+         // large image
+         if (resolved.large == "wm") {
+             activity.GetAssets().SetLargeImage(getWindowManagerName().c_str());
+         } else {
+             activity.GetAssets().SetLargeImage(resolved.large.c_str());
+         }
 
-                cout <<  "Current WinName = "
-                          << to_lower(name).c_str()
-                          << endl
-                          << endl;*/
+         // small image
+         activity.GetAssets().SetSmallImage(resolved.small.c_str());
+         activity.GetAssets().SetSmallText(title.c_str());
 
-                stateCore->ActivityManager().UpdateActivity(activity, [](discord::Result result) {
-                    cout << ((result == discord::Result::Ok) ? "Updated Status!\n" : "Status Failed!\n");
-                });
+         // cerr << "[resolvePresence]\n"
+         //      << "  details = '" << details << "'\n"
+         //      << "  resolved.name = '" << resolved.name << "'\n"
+         //      << "  class = " << winClass << "\n"
+         //      << "  title = " << title << "\n"
+         //      << "  resolved.large = '" << resolved.large << "'\n"
+         //      << "  resolved.small = '" << resolved.small << "'\n";
+
+         stateCore->ActivityManager().UpdateActivity(activity, [](discord::Result result) {
+             cout << ((result == discord::Result::Ok) ? "Updated Status!\n" : "Status Failed!\n");
+         });
             }
         }
 
