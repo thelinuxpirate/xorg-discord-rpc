@@ -55,4 +55,4 @@ Now your project directory should look something like:
 ├── include
 └── src
 #+end_src
-Once you get to this point just run the ~run.sh~ file & youre good to go
+Once you get to this point just run the ~compile.sh~ & ~run.sh~ files & youre good to go
