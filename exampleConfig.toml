@@ -11,8 +11,10 @@ small_image = ""
 firefox = "browser"
 zen = "browser"
 emacs = "editor"
-"org.wezfurlong.wezterm" = "terminal"
+# WM_CLASS is "org.wezfurlong.wezterm" but write it as:
+orgwezfurlongwezterm = "terminal"
 alacritty = "terminal"
+rmg = "mupen"
 
 # empty workspaces show up as 'unknown' (remove if you want the title to show)
 [unknown]
@@ -30,3 +32,8 @@ small_image = "tux"
 [apps.terminal]
 large_image = "archlinux"
 small_image = "terminal"
+
+[apps.mupen]
+name = "doing SM64 runs"
+large_image = "yahoo64"
+small_image = "mupen64plus"
