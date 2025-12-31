@@ -7,7 +7,16 @@
 
 /*
  * TODO:
+ * RPC:
+ * alais.rosaliesmupengui = "mupen" -> make accept instance & translate CLASS/STRING like this
+ *
+ * fix CLI commands:
+ * default config doesnt load when in .xinitrc???
+ * find a way to kill pid upon close X session
+ *
+ * rename user.h to toml.h
  * add function to restart RPC
+ *
  * Make a README that explains:
  * Build Setup
  * Application runs on assets

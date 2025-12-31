@@ -55,7 +55,7 @@ small_image = ""
 firefox = "browser"
 zen = "browser"
 emacs = "editor"
-wezterm = "terminal"
+"org.wezfurlong.wezterm" = "terminal"
 alacritty = "terminal"
 
 # empty workspaces show up as 'unknown' (remove if you want the title to show)

@@ -186,7 +186,17 @@ string getWindowClass() {
         // WM_CLASS is two null-terminated strings: instance\0class\0
         char* instance = (char*)prop;
         char* className = instance + strlen(instance) + 1;
-        string result = className ? className : instance;
+
+        // Prefer instance if it exists and is non-empty
+        string result;
+        if (instance && *instance) {
+            result = instance;
+        } else if (className && *className) {
+            result = className;
+        } else {
+            result = "unknown";
+        }
+
         XFree(prop);
         XCloseDisplay(dpy);
         return result;

@@ -47,9 +47,15 @@ ResolvedPresence resolvePresence(
     }
 
     switch (cfg.settings.details) {
-        case DetailsSource::Title: detailsFallback = windowTitle; break;
-        case DetailsSource::App: detailsFallback = windowClass; break; // class is the default fallback option
-        case DetailsSource::Class: detailsFallback = windowClass; break;
+        case DetailsSource::Title:
+            detailsFallback = windowTitle;
+            break;
+        case DetailsSource::App:
+            detailsFallback = windowClass; // class is the default fallback option
+            break;
+        case DetailsSource::Class:
+            detailsFallback = windowClass;
+            break;
     }
 
     return {
@@ -71,17 +77,11 @@ int runDiscordPresence(
 
     daemonize();
     installSignals();
-
-    discord::Core* core{};
-    if (discord::Core::Create(APP_ID, DiscordCreateFlags_Default, &core) != discord::Result::Ok || !core) {
-        cerr << "Failed to instantiate discord core!\n";
-        return -1;
-    }
-    unique_ptr<discord::Core> stateCore(core);
-
     ofstream(PID_FILE) << getpid();
 
+    unique_ptr<discord::Core> stateCore{nullptr};
     discord::Activity activity{};
+
     activity.SetType(discord::ActivityType::Playing);
     activity.GetAssets().SetLargeImage(getWindowManagerName().c_str());
     activity.GetAssets().SetLargeText(getWindowManagerName().c_str());
@@ -92,9 +92,25 @@ int runDiscordPresence(
     auto lastCheck = chrono::steady_clock::now();
 
     while (!interrupted.load(memory_order_relaxed)) {
-        stateCore->RunCallbacks();
+        if (!stateCore) {
+            discord::Core* core{};
+            auto res = discord::Core::Create(
+                APP_ID,
+                DiscordCreateFlags_NoRequireDiscord,
+                &core
+            );
 
+            if (res == discord::Result::Ok && core) {
+                stateCore.reset(core);
+            } else {
+                this_thread::sleep_for(chrono::seconds(2));
+                continue;
+            }
+        }
+
+        stateCore->RunCallbacks();
         auto now = chrono::steady_clock::now();
+
         if (now - lastCheck >= chrono::milliseconds(500)) {
             lastCheck = now;
 
@@ -134,17 +150,15 @@ int runDiscordPresence(
          activity.GetAssets().SetSmallImage(resolved.small.c_str());
          activity.GetAssets().SetSmallText(title.c_str());
 
-         // cerr << "[resolvePresence]\n"
-         //      << "  details = '" << details << "'\n"
-         //      << "  resolved.name = '" << resolved.name << "'\n"
-         //      << "  class = " << winClass << "\n"
-         //      << "  title = " << title << "\n"
-         //      << "  resolved.large = '" << resolved.large << "'\n"
-         //      << "  resolved.small = '" << resolved.small << "'\n";
-
-         stateCore->ActivityManager().UpdateActivity(activity, [](discord::Result result) {
-             cout << ((result == discord::Result::Ok) ? "Updated Status!\n" : "Status Failed!\n");
-         });
+         stateCore->ActivityManager().UpdateActivity(
+             activity,
+             [&](discord::Result result) {
+                 if (result != discord::Result::Ok) {
+                     cerr << "[rpc] Lost Discord connection\n";
+                     stateCore.reset();
+                 }
+             }
+        );
             }
         }
 
