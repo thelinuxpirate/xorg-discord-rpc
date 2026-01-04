@@ -13,14 +13,13 @@ UserConfig getUserConfig() {
     const char* xdg  = getenv("XDG_CONFIG_HOME");
     const char* home = getenv("HOME");
 
-    string wm = sanitize_asset(getWindowManagerName());
-
     fs::path base =
         xdg  ? fs::path(xdg) :
         home ? fs::path(home) / ".config" :
                fs::path("/etc/xdg");
 
-    fs::path dir = base / (wm + "-presence");
+    fs::path dir = base / "xorg-presence";
+
     fs::create_directories(dir);
 
     return {
@@ -55,8 +54,10 @@ small_image = ""
 firefox = "browser"
 zen = "browser"
 emacs = "editor"
-"org.wezfurlong.wezterm" = "terminal"
+# WM_CLASS is "org.wezfurlong.wezterm" but write it as:
+orgwezfurlongwezterm = "terminal"
 alacritty = "terminal"
+rmg = "mupen"
 
 # empty workspaces show up as 'unknown' (remove if you want the title to show)
 [unknown]
@@ -73,7 +74,12 @@ small_image = "tux"
 
 [apps.terminal]
 large_image = "archlinux"
-small_image = "terminal")";
+small_image = "terminal"
+
+[apps.mupen]
+name = "doing SM64 runs"
+large_image = "yahoo64"
+small_image = "mupen64plus")";
 
     return true;
 }

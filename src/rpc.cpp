@@ -13,6 +13,8 @@
 #include "misc.h"
 #include "xTools.h"
 
+#include <X11/Xlib.h>
+
 using namespace std;
 
 ResolvedPresence resolvePresence(
@@ -66,29 +68,52 @@ ResolvedPresence resolvePresence(
 }
 
 int runDiscordPresence(
-    const long &APP_ID,
+    const int64_t APP_ID,
     bool daemon,
     const PresenceConfig &cfg
 ) {
-    if (!daemon) {
-        killDaemon();
-        return 0;
+    pid_t pid;
+    if (isDaemonRunning(pid)) {
+        cerr << "[rpc] daemon already running (PID " << pid << ")\n";
+        return 1;
     }
 
-    daemonize();
+    Display* dpy = XOpenDisplay(nullptr);
+    if (!dpy) {
+        cerr << "[rpc] cannot open X display\n";
+        return 1;
+    }
+
+    XSetIOErrorHandler([](Display*) -> int {
+        unlink(PID_FILE);
+        _exit(0);
+    });
+
+    if (daemon) {
+        daemonize();
+    }
+
     installSignals();
     ofstream(PID_FILE) << getpid();
+
+    string wmTitle = "unkown";
+    for (int i = 0; i < 50; i++) { // 5 second wait
+        wmTitle = getWindowManagerName(dpy);
+        if (!wmTitle.empty() && wmTitle != "unknown")
+            break;
+
+        usleep(100000);
+    }
 
     unique_ptr<discord::Core> stateCore{nullptr};
     discord::Activity activity{};
 
     activity.SetType(discord::ActivityType::Playing);
-    activity.GetAssets().SetLargeImage(getWindowManagerName().c_str());
-    activity.GetAssets().SetLargeText(getWindowManagerName().c_str());
+    activity.GetAssets().SetLargeImage(wmTitle.c_str());
+    activity.GetAssets().SetLargeText(wmTitle.c_str());
     activity.GetTimestamps().SetStart(time(nullptr));
 
     string lastClass, lastTitle;
-
     auto lastCheck = chrono::steady_clock::now();
 
     while (!interrupted.load(memory_order_relaxed)) {
@@ -114,50 +139,51 @@ int runDiscordPresence(
         if (now - lastCheck >= chrono::milliseconds(500)) {
             lastCheck = now;
 
-            string winClass = getWindowClass();
-            string title    = getWindowTitle();
+            string winClass = getWindowClass(dpy);
+            string title = getWindowTitle(dpy);
 
             if (winClass != lastClass || title != lastTitle) {
                 lastClass = winClass;
                 lastTitle = title;
 
-         auto resolved = resolvePresence(cfg, winClass, title);
+                auto resolved = resolvePresence(cfg, winClass, title);
 
-         string details;
-         switch (cfg.settings.details) {
-             case DetailsSource::App:
-                 details = resolved.name;
-                 break;
-             case DetailsSource::Title:
-                 details = title;
-                 break;
-             case DetailsSource::Class:
-             default:
-                 details = winClass;
-                 break;
-         }
+                string details;
+                switch (cfg.settings.details) {
+                    case DetailsSource::App:
+                        details = resolved.name;
+                        break;
+                    case DetailsSource::Title:
+                        details = title;
+                        break;
+                    case DetailsSource::Class:
+                    default:
+                        details = winClass;
+                        break;
+                }
 
-         activity.SetDetails(capitalizeFirstLetter(details).c_str());
+                details = capitalizeFirstLetter(details);
+                activity.SetDetails(details.c_str());
 
-         // large image
-         if (resolved.large == "wm") {
-             activity.GetAssets().SetLargeImage(getWindowManagerName().c_str());
-         } else {
-             activity.GetAssets().SetLargeImage(resolved.large.c_str());
-         }
+                // large image
+                if (resolved.large == "wm") {
+                    activity.GetAssets().SetLargeImage(wmTitle.c_str());
+                } else {
+                    activity.GetAssets().SetLargeImage(resolved.large.c_str());
+                }
 
-         // small image
-         activity.GetAssets().SetSmallImage(resolved.small.c_str());
-         activity.GetAssets().SetSmallText(title.c_str());
+                // small image
+                activity.GetAssets().SetSmallImage(resolved.small.c_str());
+                activity.GetAssets().SetSmallText(title.c_str());
 
-         stateCore->ActivityManager().UpdateActivity(
-             activity,
-             [&](discord::Result result) {
-                 if (result != discord::Result::Ok) {
-                     cerr << "[rpc] Lost Discord connection\n";
-                     stateCore.reset();
-                 }
-             }
+                stateCore->ActivityManager().UpdateActivity(
+                    activity,
+                    [&](discord::Result result) {
+                        if (result != discord::Result::Ok) {
+                            cerr << "[rpc] Lost Discord connection\n";
+                            stateCore.reset();
+                        }
+                    }
         );
             }
         }

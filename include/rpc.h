@@ -17,7 +17,7 @@ ResolvedPresence resolvePresence(
 );
 
 int runDiscordPresence(
-    const long &APP_ID,
+    const int64_t APP_ID,
     bool daemon,
     const PresenceConfig &cfg
 );

@@ -5,11 +5,13 @@
 using namespace std;
 
 string normalize(string s) {
-    for (int i = 0; i < s.length(); ++i) {
-        s[i] = std::tolower(static_cast<unsigned char>(s[i]));
+    string out;
+    for (char c : s) {
+        if (isalnum(static_cast<unsigned char>(c))) {
+            out += tolower(c);
+        }
     }
-
-    return s;
+    return out;
 }
 
 string capitalizeFirstLetter(const string &s) {
@@ -18,7 +20,7 @@ string capitalizeFirstLetter(const string &s) {
     }
 
     string result = s;
-    result[0] = std::toupper(result[0]);
+    result[0] = toupper(result[0]);
     return result;
 }
 

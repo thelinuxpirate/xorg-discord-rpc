@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fstream>
+#include <iostream>
 
 #include "daemon.h"
 
@@ -13,8 +14,9 @@ using namespace std;
 atomic<bool> interrupted{false};
 
 void handleSignal(int sig) {
-    if (sig == SIGTERM || sig == SIGINT)
+    if (sig == SIGTERM || sig == SIGINT || sig == SIGHUP) {
         interrupted.store(true);
+    }
 }
 
 void installSignals() {
@@ -25,13 +27,20 @@ void installSignals() {
 
     sigaction(SIGTERM, &sa, nullptr);
     sigaction(SIGINT,  &sa, nullptr);
+    sigaction(SIGHUP, &sa, nullptr); // handle X session close
 }
 
 void killDaemon() {
+    // TODO: handle exception if PID is not found
     ifstream f(PID_FILE);
     pid_t pid;
 
     if (!(f >> pid)) return;
+
+    if (pid == getpid()) {
+        cerr << "[rpc] refusing to kill self\n";
+        return;
+    }
 
     kill(pid, SIGTERM);
 
@@ -69,4 +78,46 @@ pid_t daemonize() {
     close(fd);
 
     return getpid();
+}
+
+pid_t readPidFile() {
+    ifstream f(PID_FILE);
+    pid_t pid;
+
+    if (!(f >> pid)) {
+        return -1;
+    }
+
+    if (kill(pid, 0) != 0) {
+        unlink(PID_FILE);
+        return -1;
+    }
+
+    return pid;
+}
+
+bool isDaemonRunning(pid_t &pid) {
+    pid = readPidFile();
+    return pid > 0;
+}
+
+void restartDaemon(char** argv) {
+    pid_t pid = readPidFile();
+
+    if (pid > 0 && pid != getpid()) {
+        kill(pid, SIGTERM);
+
+        for (int i = 0; i < 50; i++) { // 5 sec wait
+            if (kill(pid, 0) != 0) {
+                unlink(PID_FILE);
+                break;
+            }
+            usleep(100000);
+        }
+    }
+
+    execvp(argv[0], argv);
+
+    perror("execvp");
+    _exit(EXIT_FAILURE);
 }
