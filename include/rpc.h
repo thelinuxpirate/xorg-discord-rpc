@@ -10,8 +10,15 @@ struct ResolvedPresence {
     std::string small;
 };
 
+std::string resolveAppKey(
+    const PresenceConfig &cfg,
+    const std::string &instance,
+    const std::string &className
+);
+
 ResolvedPresence resolvePresence(
     const PresenceConfig &cfg,
+    const std::string &instance,
     const std::string &windowTitle,
     const std::string &windowClass
 );

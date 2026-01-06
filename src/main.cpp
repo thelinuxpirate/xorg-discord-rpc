@@ -10,20 +10,6 @@
 
 /*
  * TODO:
- * check PID status closing via X close
- * DWM: Fixed
- * i3WM: Large Image = empty
- * AwesomeWM: Large Image = empty
- *
- * RPC:
- * look for both INSTANCE & CLASS prefer Instance but fallback to class \
- * when reading config file
- *
- * make messages for like: 'daemon already exists' etc
- *
- * fix CLI commands:
- * find a way to kill pid upon close X session
- *
  * rename user.h to toml.h
  * add function to restart RPC | TODO fix
  *
@@ -83,7 +69,7 @@ int main(int argc, char** argv) {
     }
 
 
-    if (restart > 0) { // gets stuck
+    if (restart > 0) { // TODO: fix
         restartDaemon(argv);
         return 0;
     }

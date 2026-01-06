@@ -17,15 +17,27 @@
 
 using namespace std;
 
+string resolveAppKey(
+    const PresenceConfig &cfg,
+    const string &instance,
+    const string &className
+) {
+    if (auto it = cfg.aliases.find(instance); it != cfg.aliases.end())
+        return it->second;
+
+    if (auto it = cfg.aliases.find(className); it != cfg.aliases.end())
+        return it->second;
+
+    return instance != "unknown" ? instance : className;
+}
+
 ResolvedPresence resolvePresence(
     const PresenceConfig &cfg,
-    const string &windowClass,
+    const string &instance,
+    const string &className,
     const string &windowTitle
 ) {
-    string normClass = normalize(windowClass);
-    auto itAlias = cfg.aliases.find(normClass);
-    string appKey = (itAlias != cfg.aliases.end()) ? itAlias->second : normClass;
-    string detailsFallback;
+    string appKey = resolveAppKey(cfg, instance, className);
 
     if (windowTitle == "unknown") {
         return {
@@ -37,9 +49,10 @@ ResolvedPresence resolvePresence(
 
     if (auto it = cfg.apps.find(appKey); it != cfg.apps.end()) {
         const auto &r = it->second;
-
-        // FALLBACK: use window class if name field is null from table
-        string detailsName = r.name.empty() ? windowClass : r.name;
+        string detailsName =
+            !r.name.empty() ? r.name :
+            instance != "unknown" ? instance :
+            className;
 
         return {
             detailsName,
@@ -48,15 +61,16 @@ ResolvedPresence resolvePresence(
         };
     }
 
+    string detailsFallback;
     switch (cfg.settings.details) {
         case DetailsSource::Title:
             detailsFallback = windowTitle;
             break;
         case DetailsSource::App:
-            detailsFallback = windowClass; // class is the default fallback option
+            detailsFallback = instance != "unknown" ? instance : className;
             break;
         case DetailsSource::Class:
-            detailsFallback = windowClass;
+            detailsFallback = className;
             break;
     }
 
@@ -109,11 +123,9 @@ int runDiscordPresence(
     discord::Activity activity{};
 
     activity.SetType(discord::ActivityType::Playing);
-    activity.GetAssets().SetLargeImage(wmTitle.c_str());
-    activity.GetAssets().SetLargeText(wmTitle.c_str());
     activity.GetTimestamps().SetStart(time(nullptr));
 
-    string lastClass, lastTitle;
+    string lastInstance, lastClass, lastTitle;
     auto lastCheck = chrono::steady_clock::now();
 
     while (!interrupted.load(memory_order_relaxed)) {
@@ -139,14 +151,21 @@ int runDiscordPresence(
         if (now - lastCheck >= chrono::milliseconds(500)) {
             lastCheck = now;
 
-            string winClass = getWindowClass(dpy);
+            auto wc = getWindowClass(dpy);
+
+            string inst = normalize(wc.instance);
+            string cls = normalize(wc.className);
             string title = getWindowTitle(dpy);
 
-            if (winClass != lastClass || title != lastTitle) {
-                lastClass = winClass;
+            if (inst != lastInstance
+                || cls != lastClass
+                || title != lastTitle
+            ) {
+                lastInstance = inst;
+                lastClass = cls;
                 lastTitle = title;
 
-                auto resolved = resolvePresence(cfg, winClass, title);
+                auto resolved = resolvePresence(cfg, inst, cls, title);
 
                 string details;
                 switch (cfg.settings.details) {
@@ -158,19 +177,24 @@ int runDiscordPresence(
                         break;
                     case DetailsSource::Class:
                     default:
-                        details = winClass;
+                        details = cls;
                         break;
                 }
 
                 details = capitalizeFirstLetter(details);
                 activity.SetDetails(details.c_str());
 
+                // TODO add option to display window title & swap between class via config or disabled
+                //activity.SetState(title.c_str);
+
                 // large image
                 if (resolved.large == "wm") {
-                    activity.GetAssets().SetLargeImage(wmTitle.c_str());
+                    activity.GetAssets().SetLargeImage(sanitize_asset(wmTitle).c_str());
                 } else {
                     activity.GetAssets().SetLargeImage(resolved.large.c_str());
                 }
+
+                activity.GetAssets().SetLargeText(sanitize_asset(wmTitle).c_str());
 
                 // small image
                 activity.GetAssets().SetSmallImage(resolved.small.c_str());
