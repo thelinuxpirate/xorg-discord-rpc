@@ -46,6 +46,7 @@ bool generateConfig(const UserConfig &cfg) {
 # default option: wm = window manager name
 [defaults]
 details = "app" # can be "app", "class", or "title"
+state = "title" # can be "app", "class", "title", or empty for none
 large_image = "wm"
 small_image = ""
 
@@ -98,6 +99,20 @@ PresenceConfig loadConfig(const string &path) {
                 cfg.settings.details = DetailsSource::App;
             } else {
                 cfg.settings.details = DetailsSource::Class;
+            }
+        }
+
+        if (auto v = d->get_as<string>("state")) {
+            string mode = normalize(v->value_or(""));
+
+            if (mode == "title") {
+                cfg.settings.state = StateSource::Title;
+            } else if (mode == "class") {
+                cfg.settings.state = StateSource::Class;
+            } else if (mode == "app") {
+                cfg.settings.state = StateSource::App;
+            } else {
+                cfg.settings.state = StateSource::Empty;
             }
         }
 

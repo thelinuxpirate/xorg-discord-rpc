@@ -184,8 +184,21 @@ int runDiscordPresence(
                 details = capitalizeFirstLetter(details);
                 activity.SetDetails(details.c_str());
 
-                // TODO add option to display window title & swap between class via config or disabled
-                //activity.SetState(title.c_str);
+                if (cfg.settings.state != StateSource::Empty) {
+                    switch (cfg.settings.state) {
+                        case StateSource::Title:
+                            activity.SetState(title.c_str());
+                            break;
+                        case StateSource::Class:
+                            activity.SetState(cls.c_str());
+                            break;
+                        case StateSource::App:
+                            activity.SetState(resolved.name.c_str());
+                            break;
+                        default:
+                            break;
+                    }
+                }
 
                 // large image
                 if (resolved.large == "wm") {

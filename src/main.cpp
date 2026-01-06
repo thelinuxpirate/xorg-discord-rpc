@@ -68,7 +68,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-
     if (restart > 0) { // TODO: fix
         restartDaemon(argv);
         return 0;

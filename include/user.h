@@ -15,8 +15,16 @@ enum class DetailsSource {
     App
 };
 
+enum class StateSource {
+    Empty,
+    Title,
+    Class,
+    App
+};
+
 struct PresenceSettings {
     DetailsSource details = DetailsSource::Title;
+    StateSource state = StateSource::Empty;
 };
 
 struct ImagePair {
