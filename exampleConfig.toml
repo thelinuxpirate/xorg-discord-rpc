@@ -3,7 +3,7 @@
 # default option: wm = window manager name
 [defaults]
 details = "app" # can be "app", "class", or "title"
-state = "title" # # can be "app", "class", "title", or empty for none
+state = "title" # can be "app", "class", "title", or empty for none
 large_image = "wm"
 small_image = ""
 
