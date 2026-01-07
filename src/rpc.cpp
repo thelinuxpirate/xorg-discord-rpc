@@ -136,21 +136,13 @@ int runDiscordPresence(
     auto appPid = getPidFilePath();
     ofstream(appPid) << getpid();
 
-    string wmTitle = "unkown";
-    for (int i = 0; i < 50; i++) { // 5 second wait
-        wmTitle = getWindowManagerName(dpy);
-        if (!wmTitle.empty() && wmTitle != "unknown")
-            break;
-
-        usleep(100000);
-    }
-
     unique_ptr<discord::Core> stateCore{nullptr};
     discord::Activity activity{};
 
     activity.SetType(discord::ActivityType::Playing);
     activity.GetTimestamps().SetStart(time(nullptr));
 
+    string wmTitle = getWindowManagerName(dpy);
     string lastInstance, lastClass, lastTitle;
     auto lastCheck = chrono::steady_clock::now();
 
@@ -165,6 +157,13 @@ int runDiscordPresence(
 
         if (now - lastCheck >= chrono::milliseconds(500)) {
             lastCheck = now;
+
+            if (wmTitle == "unknown" || wmTitle == "X11") {
+                string maybe = getWindowManagerName(dpy);
+                if (!maybe.empty() && maybe != "unknown" && maybe != "X11") {
+                    wmTitle = maybe;
+                }
+            }
 
             auto wc = getWindowClass(dpy);
 
