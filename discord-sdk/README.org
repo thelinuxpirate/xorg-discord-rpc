@@ -1,7 +1,5 @@
 #+title: Discord Game SDK (Legacy)
 
-# TODO: Explain how to patch broken SDK / make a .diff file
-
 * Build Setup
 - Download [[https://dl-game-sdk.discordapp.net/2.5.6/discord_game_sdk.zip][Discord-Game-SDK (Legacy: v2.5.6)]]
 - Extract C++ Files:
@@ -45,14 +43,28 @@ discord-sdk
     └── voice_manager.cpp
 #+end_src
 
-Now your project directory should look something like:
+Your project directory should look something like:
 #+begin_src
 ├── build
 ├── discord-sdk
 │   ├── include
+│   │   └── *.h
 │   ├── lib
+│   │   └── libdiscord_game_sdk.so
 │   └── src
-├── include
-└── src
+│       └── *.cpp
 #+end_src
-Once you get to this point just run the ~compile.sh~ & ~run.sh~ files & youre good to go
+Now with your preferred editor, edit =discord-sdk/include/types.h= & add:
+#+begin_src c++
+#pragma once
+
+#include <cstdint> // ADD THIS LINE SO YOUR PROGRAM COMPILES FINE
+#include "ffi.h"
+#include "event.h"
+
+namespace discord {
+--------------------------
+#+end_src
+
+
+Once you get to this point just run the =compile.sh= file & you're good to go
