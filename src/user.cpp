@@ -91,7 +91,7 @@ PresenceConfig loadConfig(const string &path) {
 
     if (auto d = tbl["defaults"].as_table()) {
         if (auto v = d->get_as<string>("details")) {
-            string mode = normalize(v->value_or("name"));
+            string mode = normalize(v->value_or(""));
 
             if (mode == "title") {
                 cfg.settings.details = DetailsSource::Title;

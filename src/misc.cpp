@@ -31,7 +31,6 @@ string to_lower(const string &str) {
     return result;
 }
 
-// TODO: use
 string sanitize_asset(string s) {
     s = to_lower(s);
     s.erase(remove_if(s.begin(), s.end(),

@@ -6,12 +6,28 @@
 #include <unistd.h>
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 
 #include "daemon.h"
 
 using namespace std;
+namespace fs = filesystem;
 
 atomic<bool> interrupted{false};
+
+string getPidFilePath() {
+    if (const char* xdg = getenv("XDG_RUNTIME_DIR")) {
+        return string(xdg) + "/xorg_discord_presence.pid";
+    }
+
+    string runUser = "/run/user/" + to_string(getuid()); // FALLBACK: /run/user/<uid>
+    if (fs::exists(runUser)) {
+        return runUser + "/xorg_discord_presence.pid";
+    }
+
+    return "/tmp/xorg_discord_presence.pid";
+}
+
 
 void handleSignal(int sig) {
     if (sig == SIGTERM || sig == SIGINT || sig == SIGHUP) {
@@ -31,14 +47,29 @@ void installSignals() {
 }
 
 void killDaemon() {
-    // TODO: handle exception if PID is not found
-    ifstream f(PID_FILE);
-    pid_t pid;
+    auto appPid = getPidFilePath();
 
-    if (!(f >> pid)) return;
+    ifstream f(appPid);
+    if (!f) {
+        cerr << "[rpc] no daemon running (pid file missing)\n";
+        return;
+    }
+
+    pid_t pid;
+    if (!(f >> pid) || pid <= 0) {
+        cerr << "[rpc] invalid pid file\n";
+        fs::remove(appPid);
+        return;
+    }
 
     if (pid == getpid()) {
         cerr << "[rpc] refusing to kill self\n";
+        return;
+    }
+
+    if (kill(pid, 0) != 0) {
+        cerr << "[rpc] stale pid file (process not running)\n";
+        fs::remove(appPid);
         return;
     }
 
@@ -46,16 +77,17 @@ void killDaemon() {
 
     for (int i = 0; i < 10; i++) {
         if (kill(pid, 0) != 0) {
-            unlink(PID_FILE);
+            fs::remove(appPid);
+            cout << "[rpc] daemon stopped\n";
             return;
         }
         usleep(100000);
     }
 
+    cerr << "[rpc] daemon did not exit, killing\n";
     kill(pid, SIGKILL);
-    unlink(PID_FILE);
+    fs::remove(appPid);
 }
-
 
 pid_t daemonize() {
     pid_t pid = fork();
@@ -81,7 +113,9 @@ pid_t daemonize() {
 }
 
 pid_t readPidFile() {
-    ifstream f(PID_FILE);
+    auto appPid = getPidFilePath();
+
+    ifstream f(appPid);
     pid_t pid;
 
     if (!(f >> pid)) {
@@ -89,7 +123,7 @@ pid_t readPidFile() {
     }
 
     if (kill(pid, 0) != 0) {
-        unlink(PID_FILE);
+        fs::remove(appPid);
         return -1;
     }
 
@@ -99,25 +133,4 @@ pid_t readPidFile() {
 bool isDaemonRunning(pid_t &pid) {
     pid = readPidFile();
     return pid > 0;
-}
-
-void restartDaemon(char** argv) {
-    pid_t pid = readPidFile();
-
-    if (pid > 0 && pid != getpid()) {
-        kill(pid, SIGTERM);
-
-        for (int i = 0; i < 50; i++) { // 5 sec wait
-            if (kill(pid, 0) != 0) {
-                unlink(PID_FILE);
-                break;
-            }
-            usleep(100000);
-        }
-    }
-
-    execvp(argv[0], argv);
-
-    perror("execvp");
-    _exit(EXIT_FAILURE);
 }

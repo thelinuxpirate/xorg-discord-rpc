@@ -8,43 +8,48 @@
 
 #include <X11/Xlib.h>
 
-/*
- * TODO:
- * rename user.h to toml.h
- * add function to restart RPC | TODO fix
- *
- * Make a README that explains:
- * Build Setup
- * Application runs on assets
- * why program works via PID file instead of systemD (not every distro runs same init)
-*/
-
 using namespace std;
 
-int main(int argc, char** argv) {
-    setUp();
-    XInitThreads();
+static CLI::Validator idChecker() {
+    return CLI::Validator(
+        [](const string& s) -> string {
+            if (s.empty() || !all_of(s.begin(), s.end(), ::isdigit)) {
+                return "DISCORD_APPID must be numeric";
+            }
 
+            if (s.length() < 17 || s.length() > 20) {
+                return "DISCORD_APPID must be 17–20 digits";
+            }
+
+            return {};
+        },
+        ""
+    );
+}
+
+int main(int argc, char** argv) {
+    if (setUp() != 0) {
+        return 1;
+    }
+
+    XInitThreads();
     CLI::App app{"The Xorg Discord RPC CLI Tool"};
 
     int64_t id{0};
     int getPid{0};
-    int restart{0};
     int kill{0};
     string path;
 
-    app.add_option("-i,--appid", id, "Runs instance of RPC <APPID>"); // TODO: add ->check(idChecker()); | checks for a valid DISCORD_APPID
-    app.add_option("-l,--load", path, "Loads a specfic config <TOML_PATH>");
-    app.add_option("-p,--pid", getPid, "Prints PID instance if it exists <1>")->expected(1); // flag?
-    app.add_option("-r,--restart", restart, "Restarts ongoing instance <1>")->expected(1);
+    app.add_option("-i,--appid", id, "Runs instance of RPC <APPID>")->check(idChecker());
+    app.add_option("-l,--load", path, "Loads a specfic config <TOML_PATH>")->type_name("PATH");
+    app.add_option("-p,--pid", getPid, "Prints PID instance if it exists <1>")->expected(1);
     app.add_option("-k,--kill", kill, "Shuts off ongoing instance <1>")->expected(1);
 
     CLI11_PARSE(app, argc, argv);
-
     PresenceConfig cfg;
 
     if (argc == 1) {
-        cout << app.help() << endl;
+        cout << app.help();
         return 0;
     }
 
@@ -62,15 +67,10 @@ int main(int argc, char** argv) {
         pid_t pid = readPidFile();
         if (pid > 0) {
             cout << pid << endl;
-            return 0;
+        } else {
+            cerr << "[rpc] no running daemon\n";
+            return 1;
         }
-        cerr << "[rpc] no running daemon\n";
-        return 1;
-    }
-
-    if (restart > 0) { // TODO: fix
-        restartDaemon(argv);
-        return 0;
     }
 
     if (kill > 0) {

@@ -5,6 +5,7 @@
 #include <thread>
 #include <fstream>
 #include <unistd.h>
+#include <filesystem>
 
 #include "discord.h"
 #include "rpc.h"
@@ -16,6 +17,7 @@
 #include <X11/Xlib.h>
 
 using namespace std;
+namespace fs = filesystem;
 
 string resolveAppKey(
     const PresenceConfig &cfg,
@@ -81,6 +83,29 @@ ResolvedPresence resolvePresence(
     };
 }
 
+static bool ensureDiscordCore(
+    unique_ptr<discord::Core> &core,
+    const int64_t APP_ID
+) {
+    if (core) {
+        return true;
+    }
+
+    discord::Core* raw{};
+    auto res = discord::Core::Create(
+        APP_ID,
+        DiscordCreateFlags_NoRequireDiscord,
+        &raw
+    );
+
+    if (res == discord::Result::Ok && raw) {
+        core.reset(raw);
+        return true;
+    }
+
+    return false;
+}
+
 int runDiscordPresence(
     const int64_t APP_ID,
     bool daemon,
@@ -99,7 +124,7 @@ int runDiscordPresence(
     }
 
     XSetIOErrorHandler([](Display*) -> int {
-        unlink(PID_FILE);
+        fs::remove(getPidFilePath());
         _exit(0);
     });
 
@@ -108,7 +133,8 @@ int runDiscordPresence(
     }
 
     installSignals();
-    ofstream(PID_FILE) << getpid();
+    auto appPid = getPidFilePath();
+    ofstream(appPid) << getpid();
 
     string wmTitle = "unkown";
     for (int i = 0; i < 50; i++) { // 5 second wait
@@ -129,20 +155,9 @@ int runDiscordPresence(
     auto lastCheck = chrono::steady_clock::now();
 
     while (!interrupted.load(memory_order_relaxed)) {
-        if (!stateCore) {
-            discord::Core* core{};
-            auto res = discord::Core::Create(
-                APP_ID,
-                DiscordCreateFlags_NoRequireDiscord,
-                &core
-            );
-
-            if (res == discord::Result::Ok && core) {
-                stateCore.reset(core);
-            } else {
-                this_thread::sleep_for(chrono::seconds(2));
-                continue;
-            }
+        if (!ensureDiscordCore(stateCore, APP_ID)) {
+            this_thread::sleep_for(chrono::seconds(2));
+            continue;
         }
 
         stateCore->RunCallbacks();
@@ -228,6 +243,6 @@ int runDiscordPresence(
         this_thread::sleep_for(chrono::milliseconds(16));
     }
 
-    unlink(PID_FILE);
+    fs::remove(appPid);
     return 0;
 }
