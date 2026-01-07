@@ -1,0 +1,17 @@
+#+title: Assets Setup
+* Introduction
+All images you want to show in your Rich Presence should be uploaded through the [[https://discord.com/developers/applications][Discord Developer Portal]].
+
+Go to =Application -> Rich Presence -> Art Assets=. Each image you upload here will be used in your config.toml file as the `large` or `small` image options.
+The *title of the image* you set in the portal is exactly what you put in your config.
+
+
+Discord mentions that images *must be 512x512 (minimum)* to work properly.
+From personal experience I just make sure that all my assets fit the 512x512 requirement & if it's not that size then just resize it.
+
+So basically, before you try to use an image in your config, make sure it’s uploaded in your Application's Art Assets and the =title= matches what you reference in the TOML.
+That’s all you need to get your custom Rich Presence visuals working.
+** Utilities
+- [[https://www.iloveimg.com/resize-image][Image Resizing Tool]]
+- [[https://svgtopng.com/][SVG To PNG Tool]]
+- [[https://www.gimp.org/][Gimp]] | Photo Editor
