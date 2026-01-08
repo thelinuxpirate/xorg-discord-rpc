@@ -10,6 +10,7 @@ j-->
 <img src="assets/rpc-logo.png" align="right" width="300">
 
 - [Introduction](#introduction)
+- [Showcase](#showcase)
 - [Installation](#installation)
 - [Usage](#usage)
   - [Prerequisite](#prerequisite)
@@ -32,7 +33,14 @@ Built using Discord's 'Legacy Version' of the [Game SDK](https://discord.com/dev
 instead of the newer [Social SDK](https://discord.com/developers/docs/discord-social-sdk/overview) because the Social SDK 
 focuses more on a deep social integration, player engagement, & junk to this application's purpose.
 Meanwhile the Game SDK purely focuses on just providing an activity status without relying on other 'Game/Player' features. 
+## Showcase
+<img src="assets/full-profile-showcase.png" align="center" width="715">
+This is how your profile could appear after running the program.
 
+- Large Image = Window Manager logo
+- Small Image = Currently focused application logo
+- Details = Currently focused application
+- State = Currently focused application title
 ## Installation
 If you'd like to build this program by source: [Manual Building Explanation](https://github.com/thelinuxpirate/xorg-discord-rpc/blob/main/discord-sdk/README.org)
 
@@ -85,12 +93,10 @@ updates your Discord Rich Presence accordingly.
 
 
 For a more in-depth explanation of its usage refer to the [configuration explanation](https://github.com/thelinuxpirate/xorg-discord-rpc/blob/main/CONFIGURATION.md).
-
-#### Why PID file? 
+#### Why a PID file? 
 Instead of relying on a SystemD service, this program uses a PID file (in `$XDG_RUNTIME_DIR`) to keep track of the running instance. 
 My reasoning for this is that not every Linux distro runs the same [init system](https://en.wikipedia.org/wiki/Init), 
 so using a PID file ensures the daemon works across all distros without needing special service files.
-
 ## Usage (CLI) 
 xorg-discord-rpc [OPTIONS]
 ``` sh
@@ -121,7 +127,6 @@ $ wmctrl -lx        # Prints window IDs, classes, & titles
 $ xprop -id <WINID> # Inspect a specific window's properties
 $ xwininfo -id <WINID> # Get detailed information about a window
 ```
-
 ## License
 This project’s code is licensed under the GNU General Public License v3.0 (GPL-3.0).
 
