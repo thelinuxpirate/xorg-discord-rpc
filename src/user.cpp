@@ -1,5 +1,6 @@
 #include <string>
 #include <filesystem>
+#include <iostream>
 #include <toml++/toml.hpp>
 
 #include "user.h"
@@ -87,7 +88,19 @@ small_image = "mupen64plus")";
 
 PresenceConfig loadConfig(const string &path) {
     PresenceConfig cfg{};
-    auto tbl = toml::parse_file(path);
+
+    toml::table tbl;
+    try {
+        tbl = toml::parse_file(path);
+    } catch (const toml::parse_error &err) {
+        cerr << "Error: Failed to parse TOML config file '"
+                  << path << "': " << err.what() << endl;
+        throw runtime_error("Invalid config file");
+    } catch (const exception &err) {
+        cerr << "Error: Could not read config file '"
+                  << path << "': " << err.what() << endl;
+        throw;
+    }
 
     if (auto d = tbl["defaults"].as_table()) {
         if (auto v = d->get_as<string>("details")) {
