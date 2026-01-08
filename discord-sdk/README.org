@@ -1,9 +1,23 @@
-#+title: Discord Game SDK (Legacy)
+#+title: Building Xorg-Discord-RPC | Discord Game SDK (Legacy)
+* Prerequisite
+Create an application on the [[https://discordapp.com/developers/applications/me][Discord Developer Site]].
 
-* Build Setup
+
+- Set a redirect URL. If you don't have one right now, just use <http://127.0.0.1>.
+- Enable Rich Presence for the application. This enables whitelist access for the SDK.
+ - When you are ready to test with more people, add them to the whitelist.
+- Copy the *Client ID*.
+ - Use this =CLIENT_ID= when initializing the SDK.
+   Source: Discord Game SDK: README.md(underline)
+* Building
+** 'setup.sh' Script
+...
+
+** AUR Package
+# TODO: explain what AUR is (brief) & how to install (helpers + non-helpers)
+** Manual Setup
 - Download [[https://dl-game-sdk.discordapp.net/2.5.6/discord_game_sdk.zip][Discord-Game-SDK (Legacy: v2.5.6)]]
 - Extract C++ Files:
-
 #+begin_src
 discord-sdk
 ├── include
@@ -42,7 +56,6 @@ discord-sdk
     ├── user_manager.cpp
     └── voice_manager.cpp
 #+end_src
-
 Your project directory should look something like:
 #+begin_src
 ├── build
