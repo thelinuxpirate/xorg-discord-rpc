@@ -28,7 +28,7 @@ pkgver() {
 }
 
 build() {
-  cd "$srcdir/$pkgname"
+  cd "$srcdir/xorg-discord-rpc"
 
   # Create build directory
   if [ ! -d "build" ]; then
