@@ -5,7 +5,6 @@
 <!--
  TODO: 
  ADD AUR PACKAGE TO THIS LIST
- ADD BINARY RELEASE TO REPO RELEASES
  Write CONFIGURATION.md
 j-->
 
@@ -53,8 +52,8 @@ You can download the binary on the 'Releases' page to your right.
 NOT released yet...
 Packaged on Arch Linux's User Repository, use your preferred AUR helper. 
 ```sh
-$ paru -S xorg-discord-rpc
-$ yay -S xorg-discord-rpc
+$ paru -S xorg-discord-rpc-git
+$ yay -S xorg-discord-rpc-git
 # or manually via Arch Linux's makepkg
 $ makepkg -sci
 ```
