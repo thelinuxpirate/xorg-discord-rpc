@@ -1,49 +1,61 @@
 # Maintainer: TRONG <spektralfrogadier@gmail.com>
-pkgname=xorg-discord-rpc
-pkgver=1.0.0
+pkgname=xorg-discord-rpc-git
+pkgver=0.r0.g0000000
 pkgrel=1
-pkgdesc="Discord Rich Presence Client for Xorg"
+pkgdesc="Discord Rich Presence client for Xorg (git version)"
 arch=('x86_64')
 url="https://github.com/thelinuxpirate/xorg-discord-rpc"
 license=('GPL3' 'custom:Discord-Game-SDK')
+
 depends=('libx11')
-makedepends=('cmake' 'gcc' 'wget' 'unzip' 'git')
+makedepends=('cmake' 'gcc' 'git' 'wget' 'unzip')
+
+provides=('xorg-discord-rpc')
+conflicts=('xorg-discord-rpc')
+
 source=(
   "git+https://github.com/thelinuxpirate/xorg-discord-rpc.git"
   "https://dl-game-sdk.discordapp.net/2.5.6/discord_game_sdk.zip"
 )
+
 sha256sums=('SKIP' 'SKIP')
 
+pkgver() {
+  cd "$srcdir/xorg-discord-rpc"
+  printf "r%s.%s" \
+    "$(git rev-list --count HEAD)" \
+    "$(git rev-parse --short HEAD)"
+}
+
 build() {
-  cd "$srcdir/$pkgname"
+  cd "$srcdir/xorg-discord-rpc"
 
-  # Create build directory
-  if [ ! -d "build" ]; then
-    mkdir -p build
-  fi
+  mkdir -p build
+  mkdir -p discord-sdk/{include,lib,src}
 
-  # Create missing SDK directories
-  mkdir -p "$srcdir/xorg-discord-rpc/discord-sdk/"{include,lib,src}
+  # Discord Game SDK extraction
+  unzip -q "$srcdir/discord_game_sdk.zip" -d discord_game_sdk
 
-  # Move everything to the proper build location
-  mv "$srcdir/cpp/"*.h discord-sdk/include/
-  mv "$srcdir/cpp/"*.cpp discord-sdk/src/
-  mv "$srcdir/lib/x86_64/discord_game_sdk.so" \
+  mv discord_game_sdk/discord-sdk/cpp/*.h discord-sdk/include/
+  mv discord_game_sdk/discord-sdk/cpp/*.cpp discord-sdk/src/
+  mv discord_game_sdk/discord-sdk/lib/x86_64/discord_game_sdk.so \
      discord-sdk/lib/libdiscord_game_sdk.so
 
-  # Patch types.h
+  # Patch types.h (required for C++17)
   local types_h="discord-sdk/include/types.h"
   if ! grep -q "<cstdint>" "$types_h"; then
     sed -i '1i#include <cstdint>' "$types_h"
   fi
 
-  # Build
-  cmake -S . -B build -DDISCORD_SDK_DIR="$PWD/discord-sdk"
+  cmake -S . -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DDISCORD_SDK_DIR="$PWD/discord-sdk"
+
   cmake --build build
 }
 
 package() {
-  cd "$srcdir/$pkgname"
+  cd "$srcdir/xorg-discord-rpc"
 
   install -Dm755 build/xorg-discord-rpc \
     "$pkgdir/usr/bin/xorg-discord-rpc"
@@ -65,5 +77,5 @@ package() {
 
   # Provide default config
   install -Dm644 exampleConfig.toml \
-  "$pkgdir/usr/share/doc/xorg-discord-rpc/config.toml"
+    "$pkgdir/usr/share/doc/xorg-discord-rpc/config.toml"
 }
