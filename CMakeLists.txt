@@ -82,10 +82,6 @@ target_include_directories(xorg-discord-rpc PRIVATE
     ${X11_INCLUDE_DIR}
 )
 
-set_target_properties(xorg-discord-rpc PROPERTIES
-    BUILD_RPATH "${DISCORD_SDK_DIR}/lib"
-)
-
 target_link_directories(xorg-discord-rpc PRIVATE
     ${DISCORD_SDK_DIR}/lib
 )
@@ -103,6 +99,8 @@ install(TARGETS xorg-discord-rpc
     RUNTIME DESTINATION bin
 )
 
-install(FILES README.md # TODO: add TOML docs
+install(FILES
+    README.md
+    CONFIGURATION.md
     DESTINATION share/doc/xorg-discord-presence
 )
