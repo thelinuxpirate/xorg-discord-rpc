@@ -1,24 +1,18 @@
 # Maintainer: TRONG <spektralfrogadier@gmail.com>
 pkgname=xorg-discord-rpc
-pkgver=1.0.b115b1c
+pkgver=1.0.0
 pkgrel=1
 pkgdesc="Discord Rich Presence Client for Xorg"
 arch=('x86_64')
 url="https://github.com/thelinuxpirate/xorg-discord-rpc"
-license=('GPL3')
+license=('GPL3' 'custom:Discord-Game-SDK')
 depends=('libx11')
 makedepends=('cmake' 'gcc' 'wget' 'unzip' 'git')
-
 source=(
   "git+https://github.com/thelinuxpirate/xorg-discord-rpc.git"
   "https://dl-game-sdk.discordapp.net/2.5.6/discord_game_sdk.zip"
 )
 sha256sums=('SKIP' 'SKIP')
-
-pkgver() {
-  cd "$srcdir/$pkgname"
-  printf "1.0.%s" "$(git rev-parse --short HEAD)"
-}
 
 build() {
   cd "$srcdir/$pkgname"
@@ -54,7 +48,22 @@ package() {
   install -Dm755 build/xorg-discord-rpc \
     "$pkgdir/usr/bin/xorg-discord-rpc"
 
-  # remember to add toml & assets doc here too
+  # Create documentation directory
+  install -d "$pkgdir/usr/share/doc/xorg-discord-rpc"
+
+  # Main README
   install -Dm644 README.md \
     "$pkgdir/usr/share/doc/xorg-discord-rpc/README.md"
+
+  # Configuration file explanation
+  install -Dm644 CONFIGURATION.md \
+    "$pkgdir/usr/share/doc/xorg-discord-rpc/CONFIGURATION.md"
+
+  # More in depth details about assets
+  install -Dm644 assets/README.org \
+    "$pkgdir/usr/share/doc/xorg-discord-rpc/ASSETS.org"
+
+  # Provide default config
+  install -Dm644 exampleConfig.toml \
+  "$pkgdir/usr/share/doc/xorg-discord-rpc/config.toml"
 }
