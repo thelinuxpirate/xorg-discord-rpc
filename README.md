@@ -3,7 +3,10 @@
 ![Linux](https://img.shields.io/badge/platform-Linux-informational)
 ![License](https://img.shields.io/github/license/thelinuxpirate/xorg-discord-rpc)
 <!--
- TODO: ADD AUR PACKAGE TO THIS LIST
+ TODO: 
+ ADD AUR PACKAGE TO THIS LIST
+ ADD BINARY RELEASE TO REPO RELEASES
+ Write CONFIGURATION.md
 j-->
 
 ## Table of Contents
@@ -52,6 +55,8 @@ Packaged on Arch Linux's User Repository, use your preferred AUR helper.
 ```sh
 $ paru -S xorg-discord-rpc
 $ yay -S xorg-discord-rpc
+# or manually via Arch Linux's makepkg
+$ makepkg -sci
 ```
 ## Usage
 ### Prerequisite
@@ -112,7 +117,6 @@ $ xorg-discord-rpc -p 1
 # Kill running daemon
 $ xorg-discord-rpc -k 1
 ```
-
 In a startup script.
 ```sh 
 # Example: ~/.xinitrc or startup.sh
@@ -120,7 +124,6 @@ In a startup script.
 xorg-discord-rpc -i 123456789012345678
 exec YOUR_WM
 ```
-
 These commands are useful for displaying the necessary variables/titles needed for scripting your configuration. 
 ```sh
 $ wmctrl -lx        # Prints window IDs, classes, & titles

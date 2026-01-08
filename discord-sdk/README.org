@@ -1,4 +1,4 @@
-#+title: Building Xorg-Discord-RPC | Discord Game SDK (Legacy)
+#+title: Building Xorg-Discord-RPC
 * Prerequisite
 Create an application on the [[https://discordapp.com/developers/applications/me][Discord Developer Site]].
 
@@ -6,16 +6,66 @@ Create an application on the [[https://discordapp.com/developers/applications/me
 - Set a redirect URL. If you don't have one right now, just use <http://127.0.0.1>.
 - Enable Rich Presence for the application. This enables whitelist access for the SDK.
  - When you are ready to test with more people, add them to the whitelist.
-- Copy the *Client ID*.
+- Copy the =Client_ID=.
  - Use this =CLIENT_ID= when initializing the SDK.
-   Source: Discord Game SDK: README.md(underline)
+
+Source: *Discord Game SDK - README.md*
 * Building
 ** 'setup.sh' Script
-...
+If you' like to manually build =xorg-discord-rpc= then that's fine too.
 
-** AUR Package
-# TODO: explain what AUR is (brief) & how to install (helpers + non-helpers)
+
+I've provided a couple of scripts to make it easier for you:
+- =setup.sh=
+#+begin_src sh
+#!/usr/bin/env bash
+set -euo pipefail
+
+git clone https://github.com/thelinuxpirate/xorg-discord-rpc.git # You can comment this line out if youve already cloned the repo
+cd xorg-discord-rpc
+
+mkdir build
+mkdir discord-sdk/include
+mkdir discord-sdk/lib
+mkdir discord-sdk/src
+
+wget https://dl-game-sdk.discordapp.net/2.5.6/discord_game_sdk.zip
+mkdir current/
+unzip discord_game_sdk.zip -d current/discord-sdk
+
+mv current/discord-sdk/cpp/*.h discord-sdk/include
+mv current/discord-sdk/cpp/*.cpp discord-sdk/src
+mv current/discord-sdk/lib/x86_64/discord_game_sdk.so discord-sdk/lib/libdiscord_game_sdk.so
+
+rm -r current
+
+TYPES_H="discord-sdk/include/types.h"
+
+if ! grep -q "<cstdint>" "$TYPES_H"; then
+    echo "Patching $TYPES_H to include <cstdint>..."
+    sed -i '1a#include <cstdint>' "$TYPES_H"
+fi
+
+cmake -S . -B build \
+  -DDISCORD_SDK_DIR=discord-sdk
+
+cmake --build build
+#+end_src
+- =compile.sh=
+#+begin_src sh
+export LD_LIBRARY_PATH=/discord-sdk/lib:$LD_LIBRARY_PATH
+
+if [ ! -d "build" ]; then
+  mkdir -p build
+fi
+
+cmake -S . -B build \
+  -DDISCORD_SDK_DIR=discord-sdk
+
+cmake --build build
+#+end_src
 ** Manual Setup
+Don't want to use the scripts? That's fine too, just follow this project setup:
 - Download [[https://dl-game-sdk.discordapp.net/2.5.6/discord_game_sdk.zip][Discord-Game-SDK (Legacy: v2.5.6)]]
 - Extract C++ Files:
 #+begin_src
@@ -76,8 +126,5 @@ Now with your preferred editor, edit =discord-sdk/include/types.h= & add:
 #include "event.h"
 
 namespace discord {
---------------------------
+// rest of code
 #+end_src
-
-
-Once you get to this point just run the =compile.sh= file & you're good to go
