@@ -1,24 +1,41 @@
-# CHATGPT GENERATED
-# Im not confortable enough to make a CMake file of my own
 # In order to build: download Discord-Game-SDK (Legacy: v2.5.6) & follow \
 # https://discord.com/developers/docs/developer-tools/game-sdk#game-sdk instructions
 cmake_minimum_required(VERSION 3.10)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.10)
-project(xorg_discord_presence)
+
+project(xorg-discord-rpc LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(DISCORD_SDK_DIR "" CACHE PATH "Path to Discord Game SDK")
+
+if (DISCORD_SDK_DIR STREQUAL "")
+    message(FATAL_ERROR
+        "DISCORD_SDK_DIR is not set.\n"
+        "Example:\n"
+        "  cmake -DDISCORD_SDK_DIR=/opt/discord-sdk .."
+    )
+endif()
+
+if (NOT EXISTS "${DISCORD_SDK_DIR}/include/discord.h")
+    message(FATAL_ERROR
+        "Invalid Discord Game SDK path:\n"
+        "  ${DISCORD_SDK_DIR}\n"
+        "Expected include/discord.h"
+    )
+endif()
+
 find_package(X11 REQUIRED)
 
 include(FetchContent)
+
 FetchContent_Declare(
     cli11_proj
     QUIET
     GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
     GIT_TAG v2.3.2
 )
-
 FetchContent_MakeAvailable(cli11_proj)
 
 FetchContent_Declare(
@@ -28,52 +45,64 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(tomlplusplus)
 
-set(SOURCES
+set(APP_SOURCES
     src/main.cpp
     src/xTools.cpp
     src/daemon.cpp
     src/rpc.cpp
     src/user.cpp
     src/misc.cpp
-
-    discord-sdk/src/achievement_manager.cpp
-    discord-sdk/src/activity_manager.cpp
-    discord-sdk/src/application_manager.cpp
-    discord-sdk/src/core.cpp
-    discord-sdk/src/image_manager.cpp
-    discord-sdk/src/lobby_manager.cpp
-    discord-sdk/src/network_manager.cpp
-    discord-sdk/src/overlay_manager.cpp
-    discord-sdk/src/storage_manager.cpp
-    discord-sdk/src/store_manager.cpp
-    discord-sdk/src/types.cpp
-    discord-sdk/src/relationship_manager.cpp
-    discord-sdk/src/user_manager.cpp
-    discord-sdk/src/voice_manager.cpp
 )
 
-include_directories(${X11_INCLUDE_DIR})
+set(DISCORD_SDK_SOURCES
+    ${DISCORD_SDK_DIR}/src/core.cpp
+    ${DISCORD_SDK_DIR}/src/activity_manager.cpp
+    ${DISCORD_SDK_DIR}/src/application_manager.cpp
+    ${DISCORD_SDK_DIR}/src/achievement_manager.cpp
+    ${DISCORD_SDK_DIR}/src/image_manager.cpp
+    ${DISCORD_SDK_DIR}/src/lobby_manager.cpp
+    ${DISCORD_SDK_DIR}/src/network_manager.cpp
+    ${DISCORD_SDK_DIR}/src/overlay_manager.cpp
+    ${DISCORD_SDK_DIR}/src/storage_manager.cpp
+    ${DISCORD_SDK_DIR}/src/store_manager.cpp
+    ${DISCORD_SDK_DIR}/src/types.cpp
+    ${DISCORD_SDK_DIR}/src/relationship_manager.cpp
+    ${DISCORD_SDK_DIR}/src/user_manager.cpp
+    ${DISCORD_SDK_DIR}/src/voice_manager.cpp
+)
 
-add_executable(xorg_discord_presence ${SOURCES})
+add_executable(xorg-discord-rpc
+    ${APP_SOURCES}
+    ${DISCORD_SDK_SOURCES}
+)
 
-target_include_directories(xorg_discord_presence PRIVATE
+target_include_directories(xorg-discord-rpc PRIVATE
     ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/discord-sdk/include
+    ${DISCORD_SDK_DIR}/include
+    ${X11_INCLUDE_DIR}
 )
 
-set_target_properties(xorg_discord_presence PROPERTIES
-    BUILD_RPATH "${CMAKE_SOURCE_DIR}/discord-sdk/lib"
+set_target_properties(xorg-discord-rpc PROPERTIES
+    BUILD_RPATH "${DISCORD_SDK_DIR}/lib"
 )
 
-target_link_directories(xorg_discord_presence PRIVATE
-    ${CMAKE_SOURCE_DIR}/discord-sdk/lib
+target_link_directories(xorg-discord-rpc PRIVATE
+    ${DISCORD_SDK_DIR}/lib
 )
 
-target_link_libraries(xorg_discord_presence
+target_link_libraries(xorg-discord-rpc PRIVATE
     dl
     pthread
-    CLI11::CLI11
     discord_game_sdk
-    ${X11_LIBRARIES}
+    CLI11::CLI11
     tomlplusplus::tomlplusplus
+    ${X11_LIBRARIES}
+)
+
+install(TARGETS xorg-discord-rpc
+    RUNTIME DESTINATION bin
+)
+
+install(FILES README.md # TODO: add TOML docs
+    DESTINATION share/doc/xorg-discord-presence
 )

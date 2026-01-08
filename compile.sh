@@ -4,7 +4,7 @@ if [ ! -d "build" ]; then
   mkdir -p build
 fi
 
-cd build/
-cmake ..
-make
-cd -
+cmake -S . -B build \
+  -DDISCORD_SDK_DIR=discord-sdk
+
+cmake --build build
