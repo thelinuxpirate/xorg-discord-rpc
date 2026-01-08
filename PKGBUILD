@@ -28,31 +28,33 @@ pkgver() {
 }
 
 build() {
-  cd "$srcdir/xorg-discord-rpc"
+  cd "$srcdir/$pkgname"
 
-  mkdir -p build
-  mkdir -p discord-sdk/{include,lib,src}
+  # Create build directory
+  if [ ! -d "build" ]; then
+    mkdir -p build
+  fi
 
-  # Discord Game SDK extraction
-  unzip -q "$srcdir/discord_game_sdk.zip" -d discord_game_sdk
+  # Create missing SDK directories
+  mkdir -p "$srcdir/xorg-discord-rpc/discord-sdk/"{include,lib,src}
 
-  mv discord_game_sdk/discord-sdk/cpp/*.h discord-sdk/include/
-  mv discord_game_sdk/discord-sdk/cpp/*.cpp discord-sdk/src/
-  mv discord_game_sdk/discord-sdk/lib/x86_64/discord_game_sdk.so \
+  # Move everything to the proper build location
+  mv "$srcdir/cpp/"*.h discord-sdk/include/
+  mv "$srcdir/cpp/"*.cpp discord-sdk/src/
+  mv "$srcdir/lib/x86_64/discord_game_sdk.so" \
      discord-sdk/lib/libdiscord_game_sdk.so
 
-  # Patch types.h (required for C++17)
+  # Patch types.h
   local types_h="discord-sdk/include/types.h"
   if ! grep -q "<cstdint>" "$types_h"; then
     sed -i '1i#include <cstdint>' "$types_h"
   fi
 
-  cmake -S . -B build \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DDISCORD_SDK_DIR="$PWD/discord-sdk"
-
+  # Build
+  cmake -S . -B build -DDISCORD_SDK_DIR="$PWD/discord-sdk"
   cmake --build build
 }
+
 
 package() {
   cd "$srcdir/xorg-discord-rpc"
