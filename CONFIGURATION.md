@@ -34,7 +34,7 @@ xorg-discord-rpc -l /path/to/config.toml
 ## Visual Mapping
 The image below shows how each configuration field maps to each RPC element.
 
-<img src="assets/member-view-statuspng.png" align="right" width="500">
+<img src="assets/member-view-status.png" align="right" width="500">
 <img src="assets/current-activity.png" align="center" width="435">
 
 - WHITE -> Large Image
