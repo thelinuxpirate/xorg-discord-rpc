@@ -1,13 +1,8 @@
 # Xorg Discord Rich Presence
 ![C++](https://img.shields.io/badge/C%2B%2B-17-blue)
 ![Linux](https://img.shields.io/badge/platform-Linux-informational)
-![License](https://img.shields.io/github/license/thelinuxpirate/xorg-discord-rpc)
-<!--
- TODO: 
- ADD AUR PACKAGE TO THIS LIST
- Write CONFIGURATION.md
-j-->
-
+[![AUR version](https://img.shields.io/aur/version/xorg-discord-rpc-git)](https://aur.archlinux.org/packages/xorg-discord-rpc-git)
+![AUR license](https://img.shields.io/aur/license/xorg-discord-rpc-git)
 ## Table of Contents
 <img src="assets/rpc-logo.png" align="right" width="300">
 
@@ -48,13 +43,12 @@ If you'd like to build this program by source: [Manual Building Explanation](htt
 
 
 You can download the binary on the 'Releases' page to your right.
-### TODO: Arch Linux (AUR)
-NOT released yet...
-Packaged on Arch Linux's User Repository, use your preferred AUR helper. 
+### Arch Linux (AUR)
+Arch & Arch-based users can install this package via their preferred AUR helper. 
 ```sh
 $ paru -S xorg-discord-rpc-git
 $ yay -S xorg-discord-rpc-git
-# or manually via Arch Linux's makepkg
+# or manually via Arch's makepkg
 $ makepkg -sci
 ```
 ## Usage
